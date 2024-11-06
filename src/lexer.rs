@@ -1,0 +1,121 @@
+/* The lexer/tokeniser/whatever-you-wanna-call-it for CTFAW. */
+
+#![allow(dead_code)]
+
+use crate::error::*;
+
+enum TokenType {
+    // Mathematical operators
+    ADD, SUB, DIV, MUL, POW, LPAREN, RPAREN,
+    
+    // Bitwise operators
+    BITAND, BITOR, BITNOT, LEFTSHIFT, RIGHTSHIFT,
+
+    // Logical operators
+    AND, OR, NOT, GREATER, LESS, GREATEREQU, LESSEQU,
+
+    // Values
+    IDENT, INT, FLOAT,
+
+    // Some keywords
+    LET, CONST, IF, ELSE, ELSEIF, FUNC, WHILE, RETURN,
+
+    // Other
+    REF, DEREF, LBRACE, RBRACE, ENDLN
+}
+
+struct Token {
+    ttype: TokenType,
+    // Depending on the type, one of these may have a value
+    ival: Option<u64>,
+    fval: Option<f64>,
+    // TODO: Implement string literals
+}
+
+pub fn lex(txt: &str) {
+    let mut iter = txt.chars().peekable();
+    let mut tokens = Vec::new();
+    let mut c = 0;
+    while let Some(current_char) = iter.next() {
+        let next: char = *iter.peek().unwrap();
+        match current_char {
+            ' ' => { c += 1; continue },
+            // easy ones first
+            '+' => tokens.push(Token { ttype: TokenType::ADD, ival: None, fval: None }),
+            '-' => tokens.push(Token { ttype: TokenType::SUB, ival: None, fval: None }),
+            '/' => tokens.push(Token { ttype: TokenType::DIV, ival: None, fval: None }),
+            '(' => tokens.push(Token { ttype: TokenType::LPAREN, ival: None, fval: None }),
+            ')' => tokens.push(Token { ttype: TokenType::RPAREN, ival: None, fval: None }),
+            '^' => tokens.push(Token { ttype: TokenType::POW, ival: None, fval: None }),
+            '~' => tokens.push(Token { ttype: TokenType::BITNOT, ival: None, fval: None }),
+            '!' => tokens.push(Token { ttype: TokenType::NOT, ival: None, fval: None }),
+            ';' => tokens.push(Token { ttype: TokenType::ENDLN, ival: None, fval: None }),
+            '{' => tokens.push(Token { ttype: TokenType::LBRACE, ival: None, fval: None }),
+            '}' => tokens.push(Token { ttype: TokenType::RBRACE, ival: None, fval: None }),
+            // some less easy ones
+            '&' => {
+                match next {
+                    '&' => tokens.push(Token { ttype: TokenType::AND, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::BITAND, ival: None, fval: None }),
+                }
+                iter.next();
+            },
+            '*' => {
+                match next {
+                    '*' => tokens.push(Token { ttype: TokenType::POW, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::DEREF, ival: None, fval: None }),
+                }
+                iter.next();
+            },
+            '|' => {
+                match next {
+                    '|' => tokens.push(Token { ttype: TokenType::OR, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::BITOR, ival: None, fval: None }),
+                }
+                iter.next();
+            },
+            '>' => {
+                match next {
+                    '>' => tokens.push(Token { ttype: TokenType::RIGHTSHIFT, ival: None, fval: None }),
+                    '=' => tokens.push(Token { ttype: TokenType::GREATEREQU, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::GREATER, ival: None, fval: None }),
+                }
+                iter.next();
+            },
+            '<' => {
+                match next {
+                    '<' => tokens.push(Token { ttype: TokenType::LEFTSHIFT, ival: None, fval: None }),
+                    '=' => tokens.push(Token { ttype: TokenType::LESSEQU, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::LESS, ival: None, fval: None }),
+                }
+                iter.next();
+            },
+            // number literals (both floats and integers)
+            '0'..='9' => {
+                let mut this_char: char = iter.next().unwrap();
+                let mut i = 0;
+                let mut is_float: bool = false;
+                let whole = &txt[c..];
+                while ((this_char >= '0' && this_char <= '9') || this_char == '.') && whole.len() > 0 {
+                    if whole.len() == 1 {i += 1; break }
+                    if this_char == '.' { is_float = true; }
+                    this_char = iter.next().unwrap();
+                    i += 1;
+                }
+                let num_str = &whole[..i];
+                if is_float {
+                    tokens.push(Token { ttype: TokenType::FLOAT, ival: None, fval: Some(num_str.parse::<f64>().unwrap()) });
+                } else {
+                    tokens.push(Token { ttype: TokenType::INT, ival: Some(num_str.parse::<u64>().unwrap()), fval: None });
+                }
+                if whole.len() == 1 { break }
+                continue
+            }
+            _ => report_err(Component::LEXER, "Invalid symbol."),
+        }
+        c += 1;
+    }
+    println!();
+}
+
+
