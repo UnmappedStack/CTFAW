@@ -38,6 +38,13 @@ fn is_num_digit(ch: char) -> bool {
     (ch >= '0' && ch <= '9') || ch == '.'
 }
 
+fn is_ident_char(ch: char) -> bool {
+    (ch >= '0' && ch <= '9')
+     || (ch >= 'a' && ch <= 'z')
+     || (ch >= 'A' && ch <= 'Z')
+     || ch == '_' 
+}
+
 pub fn lex(txt: &str) {
     let mut iter = txt.chars().peekable();
     let mut tokens = Vec::new();
@@ -113,8 +120,8 @@ pub fn lex(txt: &str) {
                     whole = &whole[1..];
                     i += 1;
                 }
-                let num_str = &txt[c..c + i];
-                println!("num_str = {}, i = {}", num_str, i);
+                let num_str = &txt[c..c + i + 1];
+                println!("num_str = {}", num_str);
                 if is_float {
                     tokens.push(Token { ttype: TokenType::FLOAT, ival: None, fval: Some(num_str.parse::<f64>().unwrap()) });
                 } else {
@@ -123,8 +130,18 @@ pub fn lex(txt: &str) {
                 c += i;
             },
             // handle both identifiers and keywords
-            'a'..='z' | 'A'..='Z' => {
-                println!("Identifier found.");
+            'a'..='z' | 'A'..='Z' | '_' => {
+                let mut this_char: char = current_char;
+                let mut i = 0;
+                let mut whole = &txt[c..];
+                while is_ident_char(this_char) && whole.len() > 0 {
+                    if !is_ident_char(*iter.peek().unwrap()) || whole.len() == 1 { break }
+                    this_char = iter.next().unwrap();
+                    whole = &whole[1..];
+                    i += 1;
+                }
+                let s = &txt[c..c + i];
+                c += i;
             },
             _ => report_err(Component::LEXER, "Invalid symbol."),
         }
