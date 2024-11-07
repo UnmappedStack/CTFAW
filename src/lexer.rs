@@ -17,7 +17,7 @@ pub enum Token {
     And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
 
     // Values
-    Ident(String), Int(u64), Float(f64), True, False,
+    Ident(String), Int(u64), Float(f64), Bool(u8),
 
     // Some keywords
     Let, Const, If, Else, ElseIf, Func, While, Return,
@@ -141,8 +141,8 @@ pub fn lex(txt: &str) {
                 c += i;
                 match s {
                     "let" => tokens.push(Token::Let),
-                    "true" => tokens.push(Token::True),
-                    "false" => tokens.push(Token::False),
+                    "true" => tokens.push(Token::Bool(1)),
+                    "false" => tokens.push(Token::Bool(0)),
                     "const" => tokens.push(Token::Const),
                     "if" => tokens.push(Token::If),
                     "else" => tokens.push(Token::Else),
