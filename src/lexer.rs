@@ -121,7 +121,6 @@ pub fn lex(txt: &str) {
                     i += 1;
                 }
                 let num_str = &txt[c..c + i + 1];
-                println!("num_str = {}", num_str);
                 if is_float {
                     tokens.push(Token { ttype: TokenType::FLOAT, ival: None, fval: Some(num_str.parse::<f64>().unwrap()) });
                 } else {
@@ -140,8 +139,19 @@ pub fn lex(txt: &str) {
                     whole = &whole[1..];
                     i += 1;
                 }
-                let s = &txt[c..c + i];
+                let s = &txt[c..c + i + 1];
                 c += i;
+                match s {
+                    "let" => tokens.push(Token { ttype: TokenType::LET, ival: None, fval: None }),
+                    "const" => tokens.push(Token { ttype: TokenType::CONST, ival: None, fval: None }),
+                    "if" => tokens.push(Token { ttype: TokenType::IF, ival: None, fval: None }),
+                    "else" => tokens.push(Token { ttype: TokenType::ELSE, ival: None, fval: None }),
+                    "elseif" => tokens.push(Token { ttype: TokenType::ELSEIF, ival: None, fval: None }),
+                    "func" => tokens.push(Token { ttype: TokenType::FUNC, ival: None, fval: None }),
+                    "while" => tokens.push(Token { ttype: TokenType::WHILE, ival: None, fval: None }),
+                    "return" => tokens.push(Token { ttype: TokenType::RETURN, ival: None, fval: None }),
+                    _ => continue,
+                }
             },
             _ => report_err(Component::LEXER, "Invalid symbol."),
         }
