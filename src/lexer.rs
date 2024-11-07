@@ -17,7 +17,7 @@ enum TokenType {
     AND, OR, NOT, GREATER, LESS, GREATEREQU, LESSEQU, EQU,
 
     // Values
-    IDENT, INT, FLOAT,
+    IDENT, INT, FLOAT, TRUE, FALSE,
 
     // Some keywords
     LET, CONST, IF, ELSE, ELSEIF, FUNC, WHILE, RETURN,
@@ -155,6 +155,8 @@ pub fn lex(txt: &str) {
                 c += i;
                 match s {
                     "let" => tokens.push(Token { ttype: TokenType::LET, val: TokenValue::NOVAL }),
+                    "true" => tokens.push(Token { ttype: TokenType::TRUE, val: TokenValue::NOVAL }),
+                    "false" => tokens.push(Token { ttype: TokenType::FALSE, val: TokenValue::NOVAL }),
                     "const" => tokens.push(Token { ttype: TokenType::CONST, val: TokenValue::NOVAL }),
                     "if" => tokens.push(Token { ttype: TokenType::IF, val: TokenValue::NOVAL }),
                     "else" => tokens.push(Token { ttype: TokenType::ELSE, val: TokenValue::NOVAL }),

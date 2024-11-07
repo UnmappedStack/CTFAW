@@ -1,0 +1,13 @@
+expression     -> literal
+               | unary
+               | binary
+               | grouping
+               | IDENTIFIER ;
+
+literal        -> INT | FLOAT | "true" | "false" ;
+grouping       -> "(" expression ")" ;
+unary          -> ( "-" | "!" ) expression ;
+binary         -> expression operator expression ;
+operator       -> "==" | "!=" | "<" | "<=" | ">" | ">="
+               | "+"  | "-"  | "*" | "/" ;
+assign         -> IDENTIFIER "=" expression ;
