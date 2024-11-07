@@ -10,4 +10,5 @@ unary          -> ( "-" | "!" ) expression ;
 binary         -> expression operator expression ;
 operator       -> "==" | "!=" | "<" | "<=" | ">" | ">="
                | "+"  | "-"  | "*" | "/" ;
+define         -> ("const" | "let") IDENTIFIER ": " TYPE "=" expression ;
 assign         -> IDENTIFIER "=" expression ;

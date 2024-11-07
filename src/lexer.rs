@@ -6,7 +6,7 @@ use crate::error::*;
 
 // TODO: Implement string literals
 #[derive(Debug)]
-enum Token {
+pub enum Token {
     // Mathematical operators
     Add, Sub, Div, Mul, Pow, Lparen, Rparen,
     
