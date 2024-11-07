@@ -4,7 +4,6 @@
 
 use crate::error::*;
 
-// TODO: Implement string literals
 #[derive(Debug)]
 pub enum Token {
     // Mathematical operators
@@ -17,7 +16,7 @@ pub enum Token {
     And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
 
     // Values
-    Ident(String), Int(u64), Float(f64), Bool(u8),
+    Ident(String), Int(u64), Float(f64), Bool(u8), Str(String),
 
     // Some keywords
     Let, Const, If, Else, ElseIf, Func, While, Return,
@@ -126,6 +125,23 @@ pub fn lex(txt: &str) {
                 }
                 c += i;
             },
+            // handle string literals
+            '"' => {
+                let mut this_char = *iter.peek().unwrap();
+                let mut i = 0;
+                let mut whole = &txt[c..];
+                while (this_char != '"' ) && whole.len() > 0 {
+                    if *iter.peek().unwrap() == '"' || whole.len() == 1 { break }
+                    this_char = iter.next().unwrap();
+                    whole = &whole[1..];
+                    i += 1;
+                }
+                let s = &txt[c + 1..c + i + 1];
+                println!("String literal found: {}", s);
+                tokens.push(Token::Str(String::from(s)));
+                c += i + 1;
+                iter.next();
+            }
             // handle both identifiers and keywords
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut this_char: char = current_char;
