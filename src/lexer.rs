@@ -47,11 +47,10 @@ pub fn lex(txt: &str) {
             None => next = ' '
         }
         match current_char {
-            ' ' => { c += 1; continue },
+            ' ' |  '\n' | '\t' | '\r' => { c += 1; continue },
             // easy ones first
             '+' => tokens.push(Token::Add),
             '-' => tokens.push(Token::Sub),
-            '/' => tokens.push(Token::Div),
             '(' => tokens.push(Token::Lparen),
             ')' => tokens.push(Token::Rparen),
             '^' => tokens.push(Token::Pow),
@@ -104,6 +103,23 @@ pub fn lex(txt: &str) {
                 }
                 iter.next();
             },
+            // comment and division symbol handling
+            '/' => {
+                match next {
+                    '/' => {
+                        let mut this_char: char = current_char;
+                        let mut whole = &txt[c..];
+                        while this_char != '\n' || whole.len() > 0 {
+                            if *iter.peek().unwrap() == '\n' || whole.len() == 1 { c += 1; break }
+                            this_char = iter.next().unwrap();
+                            whole = &whole[1..];
+                            c += 1;
+                        }
+                    },
+                    _ => tokens.push(Token::Div),
+                }
+                iter.next();
+            }
             // number literals (both floats and integers)
             '0'..='9' => {
                 let mut this_char: char = current_char;
