@@ -13,6 +13,7 @@ enum ExprNode {
 }
 
 enum LitNode {
+    Str(String),
     Int(u64),
     Float(f64),
     Bool(u8),
