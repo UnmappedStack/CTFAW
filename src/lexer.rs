@@ -8,22 +8,22 @@ use crate::error::*;
 #[derive(Debug)]
 enum Token {
     // Mathematical operators
-    ADD, SUB, DIV, MUL, POW, LPAREN, RPAREN,
+    Add, Sub, Div, Mul, Pow, Lparen, Rparen,
     
     // Bitwise operators
-    BITAND, BITOR, BITNOT, LEFTSHIFT, RIGHTSHIFT,
+    BitAnd, BitOr, BitNot, LeftShift, RightShift,
 
     // Logical operators
-    AND, OR, NOT, GREATER, LESS, GREATEREQU, LESSEQU, EQU,
+    And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
 
     // Values
-    IDENT(String), INT(u64), FLOAT(f64), TRUE, FALSE,
+    Ident(String), Int(u64), Float(f64), True, False,
 
     // Some keywords
-    LET, CONST, IF, ELSE, ELSEIF, FUNC, WHILE, RETURN,
+    Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    REF, DEREF, LBRACE, RBRACE, ENDLN, ASSIGN
+    Ref, Deref, Lbrace, Rbrace, Endln, Assign
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -50,58 +50,58 @@ pub fn lex(txt: &str) {
         match current_char {
             ' ' => { c += 1; continue },
             // easy ones first
-            '+' => tokens.push(Token::ADD),
-            '-' => tokens.push(Token::SUB),
-            '/' => tokens.push(Token::DIV),
-            '(' => tokens.push(Token::LPAREN),
-            ')' => tokens.push(Token::RPAREN),
-            '^' => tokens.push(Token::POW),
-            '~' => tokens.push(Token::BITNOT),
-            '!' => tokens.push(Token::NOT),
-            ';' => tokens.push(Token::ENDLN),
-            '{' => tokens.push(Token::LBRACE),
-            '}' => tokens.push(Token::RBRACE),
+            '+' => tokens.push(Token::Add),
+            '-' => tokens.push(Token::Sub),
+            '/' => tokens.push(Token::Div),
+            '(' => tokens.push(Token::Lparen),
+            ')' => tokens.push(Token::Rparen),
+            '^' => tokens.push(Token::Pow),
+            '~' => tokens.push(Token::BitNot),
+            '!' => tokens.push(Token::Not),
+            ';' => tokens.push(Token::Endln),
+            '{' => tokens.push(Token::Lbrace),
+            '}' => tokens.push(Token::Rbrace),
             // some less easy ones
             '=' => {
                 match next {
-                    '=' => tokens.push(Token::EQU),
-                    _ => tokens.push(Token::ASSIGN),
+                    '=' => tokens.push(Token::Equ),
+                    _ => tokens.push(Token::Assign),
                 }
             },
             '&' => {
                 match next {
-                    '&' => tokens.push(Token::AND),
-                    _ => tokens.push(Token::BITAND),
+                    '&' => tokens.push(Token::And),
+                    _ => tokens.push(Token::BitAnd),
                 }
                 iter.next();
             },
             '*' => {
                 match next {
-                    '*' => tokens.push(Token::POW),
-                    _ => tokens.push(Token::MUL),
+                    '*' => tokens.push(Token::Pow),
+                    _ => tokens.push(Token::Mul),
                 }
                 iter.next();
             },
             '|' => {
                 match next {
-                    '|' => tokens.push(Token::OR),
-                    _ => tokens.push(Token::BITOR),
+                    '|' => tokens.push(Token::Or),
+                    _ => tokens.push(Token::BitOr),
                 }
                 iter.next();
             },
             '>' => {
                 match next {
-                    '>' => tokens.push(Token::RIGHTSHIFT),
-                    '=' => tokens.push(Token::GREATEREQU),
-                    _ => tokens.push(Token::GREATER),
+                    '>' => tokens.push(Token::RightShift),
+                    '=' => tokens.push(Token::GreaterEqu),
+                    _ => tokens.push(Token::Greater),
                 }
                 iter.next();
             },
             '<' => {
                 match next {
-                    '<' => tokens.push(Token::LEFTSHIFT),
-                    '=' => tokens.push(Token::LESSEQU),
-                    _ => tokens.push(Token::LESS),
+                    '<' => tokens.push(Token::LeftShift),
+                    '=' => tokens.push(Token::LessEqu),
+                    _ => tokens.push(Token::Less),
                 }
                 iter.next();
             },
@@ -120,9 +120,9 @@ pub fn lex(txt: &str) {
                 }
                 let num_str = &txt[c..c + i + 1];
                 if is_float {
-                    tokens.push(Token::FLOAT(num_str.parse::<f64>().unwrap()));
+                    tokens.push(Token::Float(num_str.parse::<f64>().unwrap()));
                 } else {
-                    tokens.push(Token::INT(num_str.parse::<u64>().unwrap())); 
+                    tokens.push(Token::Int(num_str.parse::<u64>().unwrap())); 
                 }
                 c += i;
             },
@@ -140,17 +140,17 @@ pub fn lex(txt: &str) {
                 let s = &txt[c..c + i + 1];
                 c += i;
                 match s {
-                    "let" => tokens.push(Token::LET),
-                    "true" => tokens.push(Token::TRUE),
-                    "false" => tokens.push(Token::FALSE),
-                    "const" => tokens.push(Token::CONST),
-                    "if" => tokens.push(Token::IF),
-                    "else" => tokens.push(Token::ELSE),
-                    "elseif" => tokens.push(Token::ELSEIF),
-                    "func" => tokens.push(Token::FUNC),
-                    "while" => tokens.push(Token::WHILE),
-                    "return" => tokens.push(Token::RETURN),
-                    _ => tokens.push(Token::IDENT(String::from(s))),
+                    "let" => tokens.push(Token::Let),
+                    "true" => tokens.push(Token::True),
+                    "false" => tokens.push(Token::False),
+                    "const" => tokens.push(Token::Const),
+                    "if" => tokens.push(Token::If),
+                    "else" => tokens.push(Token::Else),
+                    "elseif" => tokens.push(Token::ElseIf),
+                    "func" => tokens.push(Token::Func),
+                    "while" => tokens.push(Token::While),
+                    "return" => tokens.push(Token::Return),
+                    _ => tokens.push(Token::Ident(String::from(s))),
                 }
             },
             _ => {
