@@ -11,7 +11,7 @@ pub enum Token {
     Add, Sub, Div, Pow, Lparen, Rparen,
     
     // Bitwise operators
-    BitAnd, BitOr, BitNot, LeftShift, RightShift,
+    BitOr, BitNot, LeftShift, RightShift,
 
     // Logical operators
     And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
@@ -23,7 +23,7 @@ pub enum Token {
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    Star, Deref, Lbrace, Rbrace, Endln, Assign
+    Star, Ampersand, Lbrace, Rbrace, Endln, Assign
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -72,7 +72,7 @@ pub fn lex(txt: &str) {
             '&' => {
                 match next {
                     '&' => tokens.push(Token::And),
-                    _ => tokens.push(Token::BitAnd),
+                    _ => tokens.push(Token::Ampersand), // could be deref *or* bitwise AND. That's for the parser to work out.
                 }
                 iter.next();
             },
