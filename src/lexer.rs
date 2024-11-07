@@ -53,7 +53,6 @@ pub fn lex(txt: &str) {
             '+' => tokens.push(Token::Add),
             '-' => tokens.push(Token::Sub),
             '/' => tokens.push(Token::Div),
-            '*' => tokens.push(Token::Star),
             '(' => tokens.push(Token::Lparen),
             ')' => tokens.push(Token::Rparen),
             '^' => tokens.push(Token::Pow),
@@ -79,7 +78,7 @@ pub fn lex(txt: &str) {
             '*' => {
                 match next {
                     '*' => tokens.push(Token::Pow),
-                    _ => tokens.push(Token::Mul),
+                    _ => tokens.push(Token::Star),
                 }
                 iter.next();
             },
