@@ -8,7 +8,7 @@ use crate::error::*;
 #[derive(Debug)]
 pub enum Token {
     // Mathematical operators
-    Add, Sub, Div, Mul, Pow, Lparen, Rparen,
+    Add, Sub, Div, Pow, Lparen, Rparen,
     
     // Bitwise operators
     BitAnd, BitOr, BitNot, LeftShift, RightShift,
@@ -23,7 +23,7 @@ pub enum Token {
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    Ref, Deref, Lbrace, Rbrace, Endln, Assign
+    Star, Deref, Lbrace, Rbrace, Endln, Assign
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -53,6 +53,7 @@ pub fn lex(txt: &str) {
             '+' => tokens.push(Token::Add),
             '-' => tokens.push(Token::Sub),
             '/' => tokens.push(Token::Div),
+            '*' => tokens.push(Token::Star),
             '(' => tokens.push(Token::Lparen),
             ')' => tokens.push(Token::Rparen),
             '^' => tokens.push(Token::Pow),
