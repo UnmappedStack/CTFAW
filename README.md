@@ -1,5 +1,5 @@
 # CTFAW
-Compiler To Fuck Around With
+Stands for Compiler To Fuck Around With, and is pronounced "see-foh".
 
 This is just a toy compiler that I'm messing with in Rust. It's not meant to be good. It isn't even unlikely for it to randomly crash.
 
