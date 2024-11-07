@@ -6,7 +6,7 @@ use crate::error::*;
 
 // TODO: Implement string literals
 #[derive(Debug)]
-enum TokenType {
+enum Token {
     // Mathematical operators
     ADD, SUB, DIV, MUL, POW, LPAREN, RPAREN,
     
@@ -17,27 +17,13 @@ enum TokenType {
     AND, OR, NOT, GREATER, LESS, GREATEREQU, LESSEQU, EQU,
 
     // Values
-    IDENT, INT, FLOAT, TRUE, FALSE,
+    IDENT(String), INT(u64), FLOAT(f64), TRUE, FALSE,
 
     // Some keywords
     LET, CONST, IF, ELSE, ELSEIF, FUNC, WHILE, RETURN,
 
     // Other
     REF, DEREF, LBRACE, RBRACE, ENDLN, ASSIGN
-}
-
-#[derive(Debug)]
-enum TokenValue {
-    Int(u64),
-    Float(f64),
-    String(String),
-    NOVAL
-}
-
-#[derive(Debug)]
-struct Token {
-    ttype: TokenType,
-    val: TokenValue,
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -64,58 +50,58 @@ pub fn lex(txt: &str) {
         match current_char {
             ' ' => { c += 1; continue },
             // easy ones first
-            '+' => tokens.push(Token { ttype: TokenType::ADD, val: TokenValue::NOVAL}),
-            '-' => tokens.push(Token { ttype: TokenType::SUB, val: TokenValue::NOVAL }),
-            '/' => tokens.push(Token { ttype: TokenType::DIV, val: TokenValue::NOVAL }),
-            '(' => tokens.push(Token { ttype: TokenType::LPAREN, val: TokenValue::NOVAL }),
-            ')' => tokens.push(Token { ttype: TokenType::RPAREN, val: TokenValue::NOVAL }),
-            '^' => tokens.push(Token { ttype: TokenType::POW, val: TokenValue::NOVAL }),
-            '~' => tokens.push(Token { ttype: TokenType::BITNOT, val: TokenValue::NOVAL }),
-            '!' => tokens.push(Token { ttype: TokenType::NOT, val: TokenValue::NOVAL }),
-            ';' => tokens.push(Token { ttype: TokenType::ENDLN, val: TokenValue::NOVAL }),
-            '{' => tokens.push(Token { ttype: TokenType::LBRACE, val: TokenValue::NOVAL }),
-            '}' => tokens.push(Token { ttype: TokenType::RBRACE, val: TokenValue::NOVAL }),
+            '+' => tokens.push(Token::ADD),
+            '-' => tokens.push(Token::SUB),
+            '/' => tokens.push(Token::DIV),
+            '(' => tokens.push(Token::LPAREN),
+            ')' => tokens.push(Token::RPAREN),
+            '^' => tokens.push(Token::POW),
+            '~' => tokens.push(Token::BITNOT),
+            '!' => tokens.push(Token::NOT),
+            ';' => tokens.push(Token::ENDLN),
+            '{' => tokens.push(Token::LBRACE),
+            '}' => tokens.push(Token::RBRACE),
             // some less easy ones
             '=' => {
                 match next {
-                    '=' => tokens.push(Token { ttype: TokenType::EQU, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::ASSIGN, val: TokenValue::NOVAL }),
+                    '=' => tokens.push(Token::EQU),
+                    _ => tokens.push(Token::ASSIGN),
                 }
             },
             '&' => {
                 match next {
-                    '&' => tokens.push(Token { ttype: TokenType::AND, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::BITAND, val: TokenValue::NOVAL }),
+                    '&' => tokens.push(Token::AND),
+                    _ => tokens.push(Token::BITAND),
                 }
                 iter.next();
             },
             '*' => {
                 match next {
-                    '*' => tokens.push(Token { ttype: TokenType::POW, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::MUL, val: TokenValue::NOVAL }),
+                    '*' => tokens.push(Token::POW),
+                    _ => tokens.push(Token::MUL),
                 }
                 iter.next();
             },
             '|' => {
                 match next {
-                    '|' => tokens.push(Token { ttype: TokenType::OR, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::BITOR, val: TokenValue::NOVAL }),
+                    '|' => tokens.push(Token::OR),
+                    _ => tokens.push(Token::BITOR),
                 }
                 iter.next();
             },
             '>' => {
                 match next {
-                    '>' => tokens.push(Token { ttype: TokenType::RIGHTSHIFT, val: TokenValue::NOVAL }),
-                    '=' => tokens.push(Token { ttype: TokenType::GREATEREQU, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::GREATER, val: TokenValue::NOVAL }),
+                    '>' => tokens.push(Token::RIGHTSHIFT),
+                    '=' => tokens.push(Token::GREATEREQU),
+                    _ => tokens.push(Token::GREATER),
                 }
                 iter.next();
             },
             '<' => {
                 match next {
-                    '<' => tokens.push(Token { ttype: TokenType::LEFTSHIFT, val: TokenValue::NOVAL }),
-                    '=' => tokens.push(Token { ttype: TokenType::LESSEQU, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::LESS, val: TokenValue::NOVAL }),
+                    '<' => tokens.push(Token::LEFTSHIFT),
+                    '=' => tokens.push(Token::LESSEQU),
+                    _ => tokens.push(Token::LESS),
                 }
                 iter.next();
             },
@@ -134,9 +120,9 @@ pub fn lex(txt: &str) {
                 }
                 let num_str = &txt[c..c + i + 1];
                 if is_float {
-                    tokens.push(Token { ttype: TokenType::FLOAT, val: TokenValue::Float(num_str.parse::<f64>().unwrap()) });
+                    tokens.push(Token::FLOAT(num_str.parse::<f64>().unwrap()));
                 } else {
-                    tokens.push(Token { ttype: TokenType::INT, val: TokenValue::Int(num_str.parse::<u64>().unwrap()) }); 
+                    tokens.push(Token::INT(num_str.parse::<u64>().unwrap())); 
                 }
                 c += i;
             },
@@ -154,17 +140,17 @@ pub fn lex(txt: &str) {
                 let s = &txt[c..c + i + 1];
                 c += i;
                 match s {
-                    "let" => tokens.push(Token { ttype: TokenType::LET, val: TokenValue::NOVAL }),
-                    "true" => tokens.push(Token { ttype: TokenType::TRUE, val: TokenValue::NOVAL }),
-                    "false" => tokens.push(Token { ttype: TokenType::FALSE, val: TokenValue::NOVAL }),
-                    "const" => tokens.push(Token { ttype: TokenType::CONST, val: TokenValue::NOVAL }),
-                    "if" => tokens.push(Token { ttype: TokenType::IF, val: TokenValue::NOVAL }),
-                    "else" => tokens.push(Token { ttype: TokenType::ELSE, val: TokenValue::NOVAL }),
-                    "elseif" => tokens.push(Token { ttype: TokenType::ELSEIF, val: TokenValue::NOVAL }),
-                    "func" => tokens.push(Token { ttype: TokenType::FUNC, val: TokenValue::NOVAL }),
-                    "while" => tokens.push(Token { ttype: TokenType::WHILE, val: TokenValue::NOVAL }),
-                    "return" => tokens.push(Token { ttype: TokenType::RETURN, val: TokenValue::NOVAL }),
-                    _ => tokens.push(Token { ttype: TokenType::IDENT, val: TokenValue::String(String::from(s)) }),
+                    "let" => tokens.push(Token::LET),
+                    "true" => tokens.push(Token::TRUE),
+                    "false" => tokens.push(Token::FALSE),
+                    "const" => tokens.push(Token::CONST),
+                    "if" => tokens.push(Token::IF),
+                    "else" => tokens.push(Token::ELSE),
+                    "elseif" => tokens.push(Token::ELSEIF),
+                    "func" => tokens.push(Token::FUNC),
+                    "while" => tokens.push(Token::WHILE),
+                    "return" => tokens.push(Token::RETURN),
+                    _ => tokens.push(Token::IDENT(String::from(s))),
                 }
             },
             _ => {
