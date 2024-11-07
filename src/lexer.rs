@@ -1,9 +1,10 @@
 /* The lexer/tokeniser/whatever-you-wanna-call-it for CTFAW. */
 
-#![allow(dead_code)]
+#![allow(dead_code, unused_assignments)]
 
 use crate::error::*;
 
+#[derive(Debug)]
 enum TokenType {
     // Mathematical operators
     ADD, SUB, DIV, MUL, POW, LPAREN, RPAREN,
@@ -24,6 +25,7 @@ enum TokenType {
     REF, DEREF, LBRACE, RBRACE, ENDLN
 }
 
+#[derive(Debug)]
 struct Token {
     ttype: TokenType,
     // Depending on the type, one of these may have a value
@@ -32,12 +34,20 @@ struct Token {
     // TODO: Implement string literals
 }
 
+fn is_num_digit(ch: char) -> bool {
+    (ch >= '0' && ch <= '9') || ch == '.'
+}
+
 pub fn lex(txt: &str) {
     let mut iter = txt.chars().peekable();
     let mut tokens = Vec::new();
     let mut c = 0;
     while let Some(current_char) = iter.next() {
-        let next: char = *iter.peek().unwrap();
+        let mut next: char = ' ';
+        match iter.peek() {
+            Some(ch) => next = *ch,
+            None => next = ' '
+        }
         match current_char {
             ' ' => { c += 1; continue },
             // easy ones first
@@ -63,7 +73,7 @@ pub fn lex(txt: &str) {
             '*' => {
                 match next {
                     '*' => tokens.push(Token { ttype: TokenType::POW, ival: None, fval: None }),
-                    _ => tokens.push(Token { ttype: TokenType::DEREF, ival: None, fval: None }),
+                    _ => tokens.push(Token { ttype: TokenType::MUL, ival: None, fval: None }),
                 }
                 iter.next();
             },
@@ -92,30 +102,35 @@ pub fn lex(txt: &str) {
             },
             // number literals (both floats and integers)
             '0'..='9' => {
-                let mut this_char: char = iter.next().unwrap();
+                let mut this_char: char = current_char;
                 let mut i = 0;
                 let mut is_float: bool = false;
-                let whole = &txt[c..];
-                while ((this_char >= '0' && this_char <= '9') || this_char == '.') && whole.len() > 0 {
-                    if whole.len() == 1 {i += 1; break }
+                let mut whole = &txt[c..];
+                while is_num_digit(this_char) && whole.len() > 0 {
+                    if !is_num_digit(*iter.peek().unwrap()) || whole.len() == 1 { break }
                     if this_char == '.' { is_float = true; }
                     this_char = iter.next().unwrap();
+                    whole = &whole[1..];
                     i += 1;
                 }
-                let num_str = &whole[..i];
+                let num_str = &txt[c..c + i];
+                println!("num_str = {}, i = {}", num_str, i);
                 if is_float {
                     tokens.push(Token { ttype: TokenType::FLOAT, ival: None, fval: Some(num_str.parse::<f64>().unwrap()) });
                 } else {
-                    tokens.push(Token { ttype: TokenType::INT, ival: Some(num_str.parse::<u64>().unwrap()), fval: None });
+                    tokens.push(Token { ttype: TokenType::INT, ival: Some(num_str.parse::<u64>().unwrap()), fval: None }); 
                 }
-                if whole.len() == 1 { break }
-                continue
-            }
+                c += i;
+            },
+            // handle both identifiers and keywords
+            'a'..='z' | 'A'..='Z' => {
+                println!("Identifier found.");
+            },
             _ => report_err(Component::LEXER, "Invalid symbol."),
         }
         c += 1;
     }
-    println!();
+    println!("\r\nToken list: {:?}", tokens);
 }
 
 
