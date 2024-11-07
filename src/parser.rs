@@ -15,8 +15,7 @@ enum ExprNode {
 enum LitNode {
     Int(u64),
     Float(f64),
-    True,
-    False,
+    Bool(u8),
 }
 
 enum UnarySymbol {
