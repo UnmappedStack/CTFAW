@@ -3,8 +3,9 @@
  * boodle troodles cpu friend :)
  */
 
-#![allow(dead_code)]
+use crate::lexer::*;
 
+#[allow(dead_code)]
 enum ExprNode {
     Unary(Box<UnaryNode>),
     BinOp(Box<BinOpNode>),
@@ -12,6 +13,7 @@ enum ExprNode {
     Identifier(String),
 }
 
+#[allow(dead_code)]
 enum LitNode {
     Str(String),
     Int(u64),
@@ -19,22 +21,26 @@ enum LitNode {
     Bool(u8),
 }
 
+#[allow(dead_code)]
 enum UnarySymbol {
     Negate,
     Not,
 }
 
+#[allow(dead_code)]
 struct UnaryNode {
     sym: UnarySymbol,
     expr: Box<ExprNode>,
 }
 
+#[allow(dead_code)]
 struct BinOpNode {
     expr1: Box<ExprNode>,
     oper: OperNode,
     expr2: Box<ExprNode>,
 }
 
+#[allow(dead_code)]
 enum OperNode {
     Equ,
     NotEqu,
@@ -48,6 +54,7 @@ enum OperNode {
     Divide,
 }
 
+#[allow(dead_code)]
 enum Type {
     // Unsigned types
     U64,
@@ -65,6 +72,7 @@ enum Type {
     Bool,
 }
 
+#[allow(dead_code)]
 struct AssignNode {
     is_const: bool,
     identifier: String,
@@ -72,12 +80,14 @@ struct AssignNode {
     expr: Box<ExprNode>,
 }
 
+#[allow(dead_code)]
 struct DefineNode {
     identifier: String,
     var_type: Type,
     expr: Box<ExprNode>,
 }
 
+#[allow(dead_code)]
 enum Node {
     Expression(ExprNode),
     Literal(LitNode),
@@ -86,4 +96,8 @@ enum Node {
     Operator(OperNode),
     Assign(AssignNode),
     Define(DefineNode),
+}
+
+pub fn parse(_tokens: Vec<Token>) {
+    println!("Hi, I'm a parser.");
 }

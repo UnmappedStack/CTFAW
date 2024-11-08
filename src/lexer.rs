@@ -36,7 +36,7 @@ fn is_ident_char(ch: char) -> bool {
      || ch == '_' 
 }
 
-pub fn lex(txt: &str) {
+pub fn lex(txt: &str) -> Vec<Token> {
     let mut iter = txt.chars().peekable();
     let mut tokens = Vec::new();
     let mut c = 0;
@@ -193,6 +193,7 @@ pub fn lex(txt: &str) {
         c += 1;
     }
     println!("\r\nToken list: {:?}", tokens);
+    tokens
 }
 
 

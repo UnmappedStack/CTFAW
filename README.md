@@ -5,4 +5,7 @@ This is just a toy compiler that I'm messing with in Rust. It's not meant to be 
 
 Don't use it. It's still very much a WIP.
 
-See syntax definitions in SYNTAX.txt, which is in the Backus-Naur format. This is the basis of the parser and how the AST will be constructed.
+## More information:
+
+- See syntax definitions in `SYNTAX.txt`, which is in the Backus-Naur format. This is the basis of the parser and how the AST will be constructed.
+- See how components such as the parser and backend codegen work in the `design/` directory.
