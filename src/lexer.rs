@@ -4,10 +4,15 @@
 
 use crate::error::*;
 
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
+pub enum Operation {
+    Add, Sub, Div, Pow, Star
+}
+
 #[derive(Debug)]
 pub enum Token {
     // Mathematical operators
-    Add, Sub, Div, Pow, Lparen, Rparen,
+    Ops(Operation), Lparen, Rparen,
     
     // Bitwise operators
     BitOr, BitNot, LeftShift, RightShift,
@@ -22,7 +27,7 @@ pub enum Token {
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    Star, Ampersand, Lbrace, Rbrace, Endln, Assign
+    Ampersand, Lbrace, Rbrace, Endln, Assign
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -49,11 +54,11 @@ pub fn lex(txt: &str) -> Vec<Token> {
         match current_char {
             ' ' |  '\n' | '\t' | '\r' => { c += 1; continue },
             // easy ones first
-            '+' => tokens.push(Token::Add),
-            '-' => tokens.push(Token::Sub),
+            '+' => tokens.push(Token::Ops(Operation::Add)),
+            '-' => tokens.push(Token::Ops(Operation::Sub)),
             '(' => tokens.push(Token::Lparen),
             ')' => tokens.push(Token::Rparen),
-            '^' => tokens.push(Token::Pow),
+            '^' => tokens.push(Token::Ops(Operation::Pow)),
             '~' => tokens.push(Token::BitNot),
             '!' => tokens.push(Token::Not),
             ';' => tokens.push(Token::Endln),
@@ -74,8 +79,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
             },
             '*' => {
                 match next {
-                    '*' => {tokens.push(Token::Pow); iter.next();},
-                    _ => tokens.push(Token::Star),
+                    '*' => {tokens.push(Token::Ops(Operation::Pow)); iter.next();},
+                    _ => tokens.push(Token::Ops(Operation::Star)),
                 }
             },
             '|' => {
@@ -112,7 +117,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                         }
                         iter.next();
                     },
-                    _ => tokens.push(Token::Div),
+                    _ => tokens.push(Token::Ops(Operation::Div)),
                 }
             }
             // number literals (both floats and integers)
