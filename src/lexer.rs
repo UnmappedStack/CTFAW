@@ -153,7 +153,6 @@ pub fn lex(txt: &str) -> Vec<Token> {
                     i += 1;
                 }
                 let s = &txt[c + 1..c + i + 1];
-                println!("String literal found: {}", s);
                 tokens.push(Token::Str(String::from(s)));
                 c += i + 1;
                 iter.next();
