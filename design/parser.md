@@ -29,8 +29,8 @@ Statement types with the symbol set as `N/A` are not directly found, but are ins
 
 The binary operation priorities are as follows:
 
-**`+`/`-`**: 6
-**`*`/`/`**: 5
-**`^`**: 4
+- **`+`/`-`**: 6
+- **`*`/`/`**: 5
+- **`^`**: 4
 
 (Note that it follows classic order of operations, but inversed.)
