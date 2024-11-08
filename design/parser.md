@@ -8,7 +8,7 @@ pub fn parse(tokens: Vec<Token>) -> ExprNode
 ## Operation
 1. From tokens, find the lowest priority token (priorities defined below)
 2. Select which type of statement this is based on the token type. The way to do this is explained later.
-3. Construct a branch of the right type. Repeat back to 1 for expressions etc.
+3. Construct a branch of the right type. Repeat back to 1 for expressions etc., removing irrelevant symbols and keeping the ones needed for this next child branch.
 4. Return the first node created which was the very lowest priority (which is the root of the AST)
 
 ### Symbols & Priorities
