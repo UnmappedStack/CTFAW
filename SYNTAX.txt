@@ -1,4 +1,4 @@
-wxpression     -> literal
+expression     -> literal
                | unary
                | binary
                | grouping

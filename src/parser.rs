@@ -1,103 +1,15 @@
-/* The parser which constructs an Abstract Syntax Tree (AST), which the back-end will step through
+/* The parser which constructs a function table, statement lists, and ASTs, which the back-end will step through
  * to build the final program. This makes the program much easier to comprehend for my bestie
  * boodle troodles cpu friend :)
  */
 
+#![allow(unused_variables)]
+
 use crate::lexer::*;
 
-#[allow(dead_code)]
-enum ExprNode {
-    Unary(Box<UnaryNode>),
-    BinOp(Box<BinOpNode>),
-    Group(Box<ExprNode>),
-    Identifier(String),
-}
-
-#[allow(dead_code)]
-enum LitNode {
-    Str(String),
-    Int(u64),
-    Float(f64),
-    Bool(u8),
-}
-
-#[allow(dead_code)]
-enum UnarySymbol {
-    Negate,
-    Not,
-}
-
-#[allow(dead_code)]
-struct UnaryNode {
-    sym: UnarySymbol,
-    expr: Box<ExprNode>,
-}
-
-#[allow(dead_code)]
-struct BinOpNode {
-    expr1: Box<ExprNode>,
-    oper: OperNode,
-    expr2: Box<ExprNode>,
-}
-
-#[allow(dead_code)]
-enum OperNode {
-    Equ,
-    NotEqu,
-    LessThan,
-    MoreThan,
-    LessEqu,
-    MoreEqu,
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-}
-
-#[allow(dead_code)]
-enum Type {
-    // Unsigned types
-    U64,
-    U32,
-    U16,
-    U8,
-    // Signed integer types
-    I64,
-    I32,
-    I16,
-    I8,
-    // Floating point value (always 64 bit signed)
-    F64,
-    // Other stuff
-    Bool,
-}
-
-#[allow(dead_code)]
-struct AssignNode {
-    is_const: bool,
-    identifier: String,
-    var_type: Type,
-    expr: Box<ExprNode>,
-}
-
-#[allow(dead_code)]
-struct DefineNode {
-    identifier: String,
-    var_type: Type,
-    expr: Box<ExprNode>,
-}
-
-#[allow(dead_code)]
-enum Node {
-    Expression(ExprNode),
-    Literal(LitNode),
-    Unary(UnaryNode),
-    BinOp(BinOpNode),
-    Operator(OperNode),
-    Assign(AssignNode),
-    Define(DefineNode),
-}
-
-pub fn parse(_tokens: Vec<Token>) {
-    println!("Hi, I'm a parser.");
+/* Parses an expression into an AST.
+ * Takes a list of tokens, all of which must be an operator, grouping symbol, number, or
+ * identifier. Returns an ASTNode which is the root of an AST for this expression. */
+pub fn parse_expression(tokens: Vec<Token>) {
+    println!("yo im parser");
 }

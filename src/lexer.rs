@@ -62,46 +62,41 @@ pub fn lex(txt: &str) -> Vec<Token> {
             // some less easy ones
             '=' => {
                 match next {
-                    '=' => tokens.push(Token::Equ),
+                    '=' => {tokens.push(Token::Equ); iter.next();},
                     _ => tokens.push(Token::Assign),
                 }
             },
             '&' => {
                 match next {
-                    '&' => tokens.push(Token::And),
+                    '&' => {tokens.push(Token::And); iter.next();},
                     _ => tokens.push(Token::Ampersand), // could be deref *or* bitwise AND. That's for the parser to work out.
                 }
-                iter.next();
             },
             '*' => {
                 match next {
-                    '*' => tokens.push(Token::Pow),
+                    '*' => {tokens.push(Token::Pow); iter.next();},
                     _ => tokens.push(Token::Star),
                 }
-                iter.next();
             },
             '|' => {
                 match next {
-                    '|' => tokens.push(Token::Or),
+                    '|' => {tokens.push(Token::Or); iter.next();},
                     _ => tokens.push(Token::BitOr),
                 }
-                iter.next();
             },
             '>' => {
                 match next {
-                    '>' => tokens.push(Token::RightShift),
-                    '=' => tokens.push(Token::GreaterEqu),
+                    '>' => {tokens.push(Token::RightShift); iter.next();},
+                    '=' => {tokens.push(Token::GreaterEqu); iter.next();},
                     _ => tokens.push(Token::Greater),
                 }
-                iter.next();
             },
             '<' => {
                 match next {
-                    '<' => tokens.push(Token::LeftShift),
-                    '=' => tokens.push(Token::LessEqu),
+                    '<' => {tokens.push(Token::LeftShift); iter.next();},
+                    '=' => {tokens.push(Token::LessEqu); iter.next();},
                     _ => tokens.push(Token::Less),
                 }
-                iter.next();
             },
             // comment and division symbol handling
             '/' => {
@@ -109,25 +104,26 @@ pub fn lex(txt: &str) -> Vec<Token> {
                     '/' => {
                         let mut this_char: char = current_char;
                         let mut whole = &txt[c..];
-                        while this_char != '\n' || whole.len() > 0 {
-                            if *iter.peek().unwrap() == '\n' || whole.len() == 1 { c += 1; break }
+                        while this_char != '\n' || whole.len() > 1 {
+                            if *iter.peek().unwrap() == '\n' { c += 1; break }
                             this_char = iter.next().unwrap();
                             whole = &whole[1..];
                             c += 1;
                         }
+                        iter.next();
                     },
                     _ => tokens.push(Token::Div),
                 }
-                iter.next();
             }
             // number literals (both floats and integers)
             '0'..='9' => {
                 let mut this_char: char = current_char;
                 let mut i = 0;
                 let mut is_float: bool = false;
+                println!("num, c = {}", c);
                 let mut whole = &txt[c..];
-                while is_num_digit(this_char) && whole.len() > 0 {
-                    if !is_num_digit(*iter.peek().unwrap()) || whole.len() == 1 { break }
+                while is_num_digit(this_char) && whole.len() > 1 {
+                    if !is_num_digit(*iter.peek().unwrap()) { break }
                     if this_char == '.' { is_float = true; }
                     this_char = iter.next().unwrap();
                     whole = &whole[1..];
@@ -146,8 +142,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let mut this_char = *iter.peek().unwrap();
                 let mut i = 0;
                 let mut whole = &txt[c..];
-                while (this_char != '"' ) && whole.len() > 0 {
-                    if *iter.peek().unwrap() == '"' || whole.len() == 1 { break }
+                while (this_char != '"' ) && whole.len() > 1 {
+                    if *iter.peek().unwrap() == '"' { break }
                     this_char = iter.next().unwrap();
                     whole = &whole[1..];
                     i += 1;
@@ -162,8 +158,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let mut this_char: char = current_char;
                 let mut i = 0;
                 let mut whole = &txt[c..];
-                while is_ident_char(this_char) && whole.len() > 0 {
-                    if !is_ident_char(*iter.peek().unwrap()) || whole.len() == 1 { break }
+                while is_ident_char(this_char) && whole.len() > 1 {
+                    if !is_ident_char(*iter.peek().unwrap()) { break }
                     this_char = iter.next().unwrap();
                     whole = &whole[1..];
                     i += 1;

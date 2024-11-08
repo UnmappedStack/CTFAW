@@ -3,9 +3,9 @@ mod parser;
 mod error;
 
 fn main() {
-    let input: &str = "let val = \"this is a string\" + num + true; // This is a comment\nlet otherval = val + 1;"; // just as a test
+    let input: &str = "24 + 3 * 4 + 7"; // just as a test
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    parser::parse(tokens);
+    parser::parse_expression(tokens);
 }
