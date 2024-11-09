@@ -131,7 +131,6 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let mut this_char: char = current_char;
                 let mut i = 0;
                 let mut is_float: bool = false;
-                println!("num, c = {}", c);
                 let mut whole = &txt[c..];
                 while is_num_digit(this_char) && whole.len() > 1 {
                     if !is_num_digit(*iter.peek().unwrap()) { break }
