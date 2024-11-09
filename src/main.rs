@@ -4,7 +4,7 @@ mod ast;
 mod error;
 
 fn main() {
-    let input: &str = "num = 69;"; // just as a test
+    let input: &str = "fnName(12, 53);"; // just as a test
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);

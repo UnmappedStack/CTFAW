@@ -107,8 +107,36 @@ fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
 }
 
 fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
-    println!("Function call statement.");
-    Statement::NullStatement
+    let identifier = if let Token::Ident(val) = tokens[0].clone() {
+        val
+    } else {
+        assert!(false, "unreachable");
+        String::from("ctfaw_failure")
+    };
+    
+    let mut arg_tokens: Vec<Vec<Token>> = Vec::new();
+    let mut arg_idx = -1;
+    for tok in 2..tokens.len() - 2 {
+        if tokens[tok] == Token::Comma || tok == 2 {
+            arg_tokens.push(Vec::new());
+            arg_idx += 1;
+            if tokens[tok] == Token::Comma { continue; }
+        }
+        let token = tokens[tok].clone();
+        arg_tokens[arg_idx as usize].push(token);
+    }
+    println!("Arg tokens: {:?}", arg_tokens);
+    let mut args: Vec<BranchChild> = Vec::new();
+    for arg in arg_tokens {
+        args.push(parse_expression(arg));
+    }
+    
+    Statement::FuncCall(
+        FuncCallStatement {
+            fn_ident: identifier,
+            args
+        }
+    )
 }
 
 pub fn parse_statement(tokens: Vec<Token>) {
