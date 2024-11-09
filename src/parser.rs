@@ -32,7 +32,7 @@ fn print_level_spaces(depth: u32) {
 
 /* Helper function to print a single AST branch recursively (called by print_ast) */
 fn print_ast_level(branch: &ASTBranch, depth: u32) {
-    println!("-> Branch - {:?}:", branch.op);
+    println!("Branch - {:?}:", branch.op);
     print_level_spaces(depth + 1);
     let left = &branch.left_val;
     match *((*left).clone()) {
@@ -59,6 +59,7 @@ fn print_ast_level(branch: &ASTBranch, depth: u32) {
 
 /* Debug function to print an entire AST */
 pub fn print_ast(root: &BranchChild) {
+    print!("-> ");
     if let BranchChild::Branch(branch) = root {
         print_ast_level(branch, 0);
     } else {
@@ -67,15 +68,35 @@ pub fn print_ast(root: &BranchChild) {
 }
 
 /* Finds the index of the token with the highest priority.
- * If there are multiple of the same priority, it should pick the last. */
+ * If there are multiple of the same priority, it should pick the last.
+ * It should always select a token *outside* of brackets, if there are any. 
+ */
 fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation, u8>) -> usize {
+    // find the indexes of the last and first parentheses & make sure they're matched
+    let first_bracket = tokens.iter().position(|x| *x == Token::Lparen);
+    let last_bracket = tokens.iter().rposition(|x| *x == Token::Rparen);
+    let mut has_brackets = false;
+    match first_bracket {
+        Some(idx) => {
+            has_brackets = true;
+            if last_bracket == None {
+                assert!(false, "Opening bracket ( is not matched.");
+            }
+        },
+        _ => {
+            if last_bracket != None {
+                assert!(false, "Closing bracket ) is not matched.");
+            }
+        }
+    }
+    // find the actual token
     let mut highest_priority_idx = 0;
     let mut max_priority = 0;
     let tokens_len = tokens.len();
     for idx in 0..tokens_len {
         if let Token::Ops(op) = tokens[idx] {
             let priority = priorities[&op];
-            if priority >= max_priority {
+            if (priority >= max_priority) && !(has_brackets && (idx > first_bracket.unwrap() && idx < last_bracket.unwrap())) {
                 max_priority = priority;
                 highest_priority_idx = idx;
             }
@@ -84,8 +105,13 @@ fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation,
     return highest_priority_idx
 }
 
-fn parse_branch(tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild>{
-    if tokens.len() == 1 {
+fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
+    let mut tokens_len = tokens.len();
+    if tokens[0] == Token::Lparen && tokens[tokens_len - 1] == Token::Rparen {
+        tokens = &tokens[1..tokens_len - 1];
+        tokens_len -= 2;
+    }
+    if tokens_len == 1 {
         // It's a number so return a child with just a number
         match &tokens[0] {
             Token::Int(val) => return Box::new(BranchChild::Int(*val)),

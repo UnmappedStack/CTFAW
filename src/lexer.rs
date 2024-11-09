@@ -9,7 +9,7 @@ pub enum Operation {
     Add, Sub, Div, Pow, Star,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Mathematical operators
     Ops(Operation), Lparen, Rparen,
