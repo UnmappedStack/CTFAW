@@ -27,7 +27,7 @@ pub enum Token {
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    Ampersand, Comma, Lbrace, Rbrace, Endln, Assign
+    Ampersand, Comma, Colon, Lbrace, Rbrace, Endln, Assign
 }
 
 fn is_num_digit(ch: char) -> bool {
@@ -54,6 +54,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
         match current_char {
             ' ' |  '\n' | '\t' | '\r' => { c += 1; continue },
             // easy ones first
+            ':' => tokens.push(Token::Ops(Operation::Colon)),
             ',' => tokens.push(Token::Ops(Operation::Comma)),
             '+' => tokens.push(Token::Ops(Operation::Add)),
             '-' => tokens.push(Token::Ops(Operation::Sub)),
