@@ -7,5 +7,8 @@ fn main() {
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    parser::parse_expression(tokens);
+    let ast = parser::parse_expression(tokens);
+
+    println!("AST generated:");
+    parser::print_ast(&ast);
 }

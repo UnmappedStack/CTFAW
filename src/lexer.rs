@@ -6,10 +6,10 @@ use crate::error::*;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Operation {
-    Add, Sub, Div, Pow, Star
+    Add, Sub, Div, Pow, Star,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     // Mathematical operators
     Ops(Operation), Lparen, Rparen,
