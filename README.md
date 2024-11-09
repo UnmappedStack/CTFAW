@@ -9,3 +9,11 @@ Don't use it. It's still very much a WIP.
 
 - See syntax definitions in `SYNTAX.txt`, which is in the Backus-Naur format. This is the basis of the parser and how the AST will be constructed.
 - See how components such as the parser and backend codegen work in the `design/` directory.
+
+## Quickstart
+
+Unfortunately CTFAW isn't yet at a point where it's ready to compile any file you want. To test out what's going on so far, simply run:
+```shell
+$ cargo run
+```
+This will output some debug information such as a list of tokens and ASTs, statement lists, and function tables.
