@@ -101,6 +101,25 @@ fn parse_assign_statement(tokens: Vec<Token>) -> Statement {
     )
 }
 
+fn parse_expr_list(tokens: Vec<Token>) -> Vec<BranchChild> {
+    let mut arg_tokens: Vec<Vec<Token>> = Vec::new();
+    let mut arg_idx: i64 = -1;
+    for tok in 0..tokens.len() {
+        if tokens[tok] == Token::Comma || tok == 0 {
+            arg_tokens.push(Vec::new());
+            arg_idx += 1;
+            if tokens[tok] == Token::Comma { continue; }
+        }
+        let token = tokens[tok].clone();
+        arg_tokens[arg_idx as usize].push(token);
+    }
+    let mut args: Vec<BranchChild> = Vec::new();
+    for arg in arg_tokens {
+        args.push(parse_expression(arg));
+    }
+    args
+}
+
 fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     println!("Inline asm statement.");
     Statement::NullStatement
@@ -113,24 +132,7 @@ fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
         assert!(false, "unreachable");
         String::from("ctfaw_failure")
     };
-    
-    let mut arg_tokens: Vec<Vec<Token>> = Vec::new();
-    let mut arg_idx = -1;
-    for tok in 2..tokens.len() - 2 {
-        if tokens[tok] == Token::Comma || tok == 2 {
-            arg_tokens.push(Vec::new());
-            arg_idx += 1;
-            if tokens[tok] == Token::Comma { continue; }
-        }
-        let token = tokens[tok].clone();
-        arg_tokens[arg_idx as usize].push(token);
-    }
-    println!("Arg tokens: {:?}", arg_tokens);
-    let mut args: Vec<BranchChild> = Vec::new();
-    for arg in arg_tokens {
-        args.push(parse_expression(arg));
-    }
-    
+    let args = parse_expr_list(tokens[2..tokens.len() - 2].to_vec());
     Statement::FuncCall(
         FuncCallStatement {
             fn_ident: identifier,
