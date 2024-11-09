@@ -3,7 +3,7 @@
  * boodle troodles cpu friend :)
  */
 
-#![allow(unused_variables, dead_code)]
+#![allow(dead_code, unused_variables)]
 
 use std::collections::HashMap;
 use crate::lexer::*;

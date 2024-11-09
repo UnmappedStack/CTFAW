@@ -54,8 +54,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
         match current_char {
             ' ' |  '\n' | '\t' | '\r' => { c += 1; continue },
             // easy ones first
-            ':' => tokens.push(Token::Ops(Operation::Colon)),
-            ',' => tokens.push(Token::Ops(Operation::Comma)),
+            ':' => tokens.push(Token::Colon),
+            ',' => tokens.push(Token::Comma),
             '+' => tokens.push(Token::Ops(Operation::Add)),
             '-' => tokens.push(Token::Ops(Operation::Sub)),
             '(' => tokens.push(Token::Lparen),
