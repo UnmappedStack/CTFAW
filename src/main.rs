@@ -1,5 +1,6 @@
 mod lexer;
 mod parser;
+mod ast;
 mod error;
 
 fn main() {
@@ -7,8 +8,8 @@ fn main() {
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    let ast = parser::parse_expression(tokens);
+    let ast = ast::parse_expression(tokens);
 
     println!("AST generated:");
-    parser::print_ast(&ast);
+    ast::print_ast(&ast);
 }

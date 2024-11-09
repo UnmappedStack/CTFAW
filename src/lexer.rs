@@ -9,6 +9,7 @@ pub enum Operation {
     Add, Sub, Div, Pow, Star,
 }
 
+// TODO: Add signed integer types
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Mathematical operators
@@ -23,7 +24,10 @@ pub enum Token {
     // Values
     Ident(String), Int(u64), Float(f64), Bool(u8), Str(String),
 
-    // Some keywords
+    // Keywords which describe a type
+    U8, U16, U32, U64, F64, Boolean,
+
+    // Some other keywords
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
@@ -174,6 +178,12 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let s = &txt[c..c + i + 1];
                 c += i;
                 match s {
+                    "f64" => tokens.push(Token::F64),
+                    "u8" => tokens.push(Token::U8),
+                    "u16" => tokens.push(Token::U16),
+                    "u32" => tokens.push(Token::U32),
+                    "u64" => tokens.push(Token::U64),
+                    "bool" => tokens.push(Token::Boolean),
                     "let" => tokens.push(Token::Let),
                     "true" => tokens.push(Token::Bool(1)),
                     "false" => tokens.push(Token::Bool(0)),
