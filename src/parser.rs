@@ -8,6 +8,7 @@ use crate::lexer::*;
 use crate::ast::*;
 
 // Some structures first need to be defined
+// TODO: Add a generic assign statement used for both assigning existing vars and defining new ones
 
 #[derive(Debug)]
 struct DefineStatement {
@@ -29,7 +30,7 @@ struct FuncCallStatement {
     args: Vec<BranchChild>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AsmIOEntry {
     register: String,
     identifier: String,
@@ -120,9 +121,91 @@ fn parse_expr_list(tokens: Vec<Token>) -> Vec<BranchChild> {
     args
 }
 
+/* A small helper function to find the nth instance of a Token in a Vec<Token> */
+fn get_index(v: Vec<Token>, occurrence: usize, value: Token) -> Option<usize> {
+    v.iter()
+        .enumerate()
+        .filter(|(_, &ref v) | *v == value)
+        .map(|(i, _)| i)
+        .nth(occurrence - 1)
+}
+
+/* asm(asm : reg | identifier, reg | identifier, reg : identifier : reg, reg, reg);
+ *      ^              ^                                   ^               ^
+ * asm source       inputs list                        outputs list     clobbered register list
+ */ 
 fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
-    println!("Inline asm statement.");
-    Statement::NullStatement
+    let asm = if let Token::Str(val) = tokens[2].clone() {
+        val
+    } else {
+        assert!(false, "Invalid syntax for asm(), expected assembly source body after parenthesis.");
+        String::from("ctfaw_failure")
+    };
+    // get inputs & outputs
+    let first_colon_idx  = get_index(tokens.clone(), 1, Token::Colon).unwrap();
+    let second_colon_idx = get_index(tokens.clone(), 2, Token::Colon).unwrap();
+    let third_colon_idx  = get_index(tokens.clone(), 3, Token::Colon).unwrap();
+    let closing_paren_idx = tokens.len() - 2;
+    let input_tokens  = &tokens[first_colon_idx + 1..second_colon_idx];
+    let output_tokens = &tokens[second_colon_idx + 1..third_colon_idx];
+    let input_split: Vec<_> = input_tokens
+        .split(|e| *e == Token::Comma)
+        .filter(|v| !v.is_empty())
+        .collect();
+    let output_split: Vec<_> = output_tokens
+        .split(|e| *e == Token::Comma)
+        .filter(|v| !v.is_empty())
+        .collect();
+    
+    let io_split = Vec::from([input_split.clone(), output_split.clone()]);
+
+    let mut io: Vec<Vec<AsmIOEntry>> = Vec::from([Vec::from([]), Vec::from([])]);
+    for t in 0..2 {
+        for i in 0..input_split.len() {
+            assert!(input_split[i][1] == Token::BitOr, "Expected | in inline assembly input/output between register name and identifier, got other value.");
+            let register = if let Token::Str(val) = io_split[t][i][0].clone() {
+                val
+            } else {
+                assert!(false, "Expected register name as string literal in input/output for inline assembly, got other value.");
+                String::from("ctfaw_failure")
+            };
+            let identifier = if let Token::Ident(val) = io_split[t][i][2].clone() {
+                val
+            } else {
+                assert!(false, "Expected identifier in input/output for inline assembly, got other value.");
+                String::from("ctfaw_failure")
+            };
+            io[t].push(AsmIOEntry {
+                register,
+                identifier,
+            });
+        }
+    }
+    
+    let clobber_tokens = &tokens[third_colon_idx + 1..closing_paren_idx];
+    let clobber_split: Vec<_> = clobber_tokens
+        .split(|e| *e == Token::Comma)
+        .filter(|v| !v.is_empty())
+        .collect();
+    let mut clobbers = Vec::new();
+    for i in 0..clobber_split.len() {
+        let reg = if let Token::Str(val) = clobber_split[i][0].clone() {
+            val
+        } else {
+            assert!(false, "String expected in clobbered register list for inline assembly, got other value.");
+            String::from("ctfaw_failure")
+        };
+        clobbers.push(reg);
+    }
+
+    Statement::InlineAsm(
+        InlineAsmStatement {
+            asm,
+            inputs: io[0].clone(),
+            outputs: io[1].clone(),
+            clobbers
+        }
+    )
 }
 
 fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
