@@ -30,6 +30,7 @@ This will output some debug information such as a list of tokens and ASTs, state
 - [ ] Semantic analysis
 
 **Backend**
+
 The exact components are to be determined.
 
 You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
