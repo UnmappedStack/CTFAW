@@ -34,3 +34,12 @@ This will output some debug information such as a list of tokens and ASTs, state
 The exact components are to be determined.
 
 You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
+
+## License & Contributing
+
+This project is under the Mozilla Public License 2.0. See the details in the `LICENSE` file.
+
+I'm currently not open to contributions, as this is:
+
+1. This is my way of learning Rust (it's my second Rust project)
+2. A personal project to learn the concepts behind compilers for fun.
