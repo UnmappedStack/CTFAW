@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 use crate::lexer::*;
+use crate::parser::*;
 
 #[derive(Debug, Clone)]
 pub enum BranchChild {
@@ -11,6 +12,7 @@ pub enum BranchChild {
     Int(u64),
     Float(f64),
     Ident(String),
+    Fn(FuncCallStatement),
 }
 
 #[derive(Debug, Clone)]
@@ -107,6 +109,25 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     if tokens[0] == Token::Lparen && tokens[tokens_len - 1] == Token::Rparen {
         tokens = &tokens[1..tokens_len - 1];
         tokens_len -= 2;
+    }
+    if let Token::Ident(val) = &tokens[0] {
+        if (tokens[1] == Token::Lparen) && (tokens[tokens_len - 1] == Token::Rparen) {
+            // All that's left is a function call statement. Parse it.
+            let mut tokens_vec = Vec::from(tokens);
+            tokens_vec.push(Token::Endln);
+            let statement = parse_func_call_statement(tokens_vec);
+            let fn_statement = if let Statement::FuncCall(val) = statement {
+                val
+            } else {
+                assert!(false, "Unreachable");
+                FuncCallStatement { fn_ident: String::from("ctfaw_failure"), args: Vec::new() }
+            };
+            return Box::new(
+                BranchChild::Fn(
+                    fn_statement
+                )
+            )
+        }
     }
     if tokens_len == 1 {
         // It's a number so return a child with just a number

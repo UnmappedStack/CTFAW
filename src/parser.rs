@@ -11,7 +11,7 @@ use crate::ast::*;
 // TODO: Add a generic assign statement used for both assigning existing vars and defining new ones
 
 #[derive(Debug)]
-struct DefineStatement {
+pub struct DefineStatement {
     is_const: bool,
     identifier: String,
     def_type: Token,
@@ -19,25 +19,25 @@ struct DefineStatement {
 }
 
 #[derive(Debug)]
-struct AssignStatement {
+pub struct AssignStatement {
     identifier: String,
     expr: BranchChild,
 }
 
-#[derive(Debug)]
-struct FuncCallStatement {
-    fn_ident: String,
-    args: Vec<BranchChild>,
+#[derive(Debug, Clone)]
+pub struct FuncCallStatement {
+    pub fn_ident: String,
+    pub args: Vec<BranchChild>,
 }
 
 #[derive(Debug, Clone)]
-struct AsmIOEntry {
+pub struct AsmIOEntry {
     register: String,
     identifier: String,
 }
 
 #[derive(Debug)]
-struct InlineAsmStatement {
+pub struct InlineAsmStatement {
     asm: String,
     inputs: Vec<AsmIOEntry>,
     outputs: Vec<AsmIOEntry>,
@@ -45,7 +45,7 @@ struct InlineAsmStatement {
 }
 
 #[derive(Debug)]
-enum Statement {
+pub enum Statement {
     Define(DefineStatement),
     Assign(AssignStatement),
     FuncCall(FuncCallStatement),
@@ -208,7 +208,7 @@ fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     )
 }
 
-fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
+pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
     let identifier = if let Token::Ident(val) = tokens[0].clone() {
         val
     } else {
