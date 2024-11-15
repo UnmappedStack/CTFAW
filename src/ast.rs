@@ -110,6 +110,19 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
         tokens = &tokens[1..tokens_len - 1];
         tokens_len -= 2;
     }
+    if tokens_len == 1 {
+        // It's a number so return a child with just a number
+        match &tokens[0] {
+            Token::Int(val) => return Box::new(BranchChild::Int(*val)),
+            Token::Float(val) => return Box::new(BranchChild::Float(*val)),
+            Token::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
+            Token::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
+            _ => {
+                assert!(false, "One symbol left in expression, not a number or identifier.");
+                return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy
+            },
+        }
+    }
     if let Token::Ident(val) = &tokens[0] {
         if (tokens[1] == Token::Lparen) && (tokens[tokens_len - 1] == Token::Rparen) {
             // All that's left is a function call statement. Parse it.
@@ -128,20 +141,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
                 )
             )
         }
-    }
-    if tokens_len == 1 {
-        // It's a number so return a child with just a number
-        match &tokens[0] {
-            Token::Int(val) => return Box::new(BranchChild::Int(*val)),
-            Token::Float(val) => return Box::new(BranchChild::Float(*val)),
-            Token::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
-            Token::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
-            _ => {
-                assert!(false, "One symbol left in expression, not a number or identifier.");
-                return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy
-            },
-        }
-    }
+    } 
     let max_priority_idx = find_highest_priority_token(tokens, priorities_map);
     let left_branch = parse_branch(&tokens[..max_priority_idx], priorities_map);
     let right_branch = parse_branch(&tokens[max_priority_idx + 1..], priorities_map);

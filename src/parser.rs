@@ -4,6 +4,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use crate::statements::*;
 use crate::lexer::*;
 
 #[derive(Debug)]
@@ -72,7 +73,7 @@ pub fn parse(tokens: Vec<Token>) {
         println!("Return type: {:?}", rettype);
         assert!(*decl_iter.next().unwrap() == Token::Lbrace, "Expected right brace (`{{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
-        let mut i = 1;
+        let mut i = 0;
         while let Some(this_token) = decl_iter.next() {
             if *this_token == Token::Lbrace { num_open_lbraces += 1; continue }
             if *this_token == Token::Rbrace {
@@ -84,6 +85,18 @@ pub fn parse(tokens: Vec<Token>) {
         }
         let statement_tokens = &tokens[offset..offset + i];
         println!("Statement tokens: {:?}", statement_tokens);
+        let statements_before_parse: Vec<_> = statement_tokens
+            .split(|e| *e == Token::Endln)
+            .filter(|v| !v.is_empty())
+            .collect();
+        let mut statements = Vec::new();
+        for statement in statements_before_parse {
+            let mut statement_vec = Vec::from(statement);
+            statement_vec.push(Token::Endln);
+            println!("Parsing statement: {:?}", statement_vec);
+            statements.push(parse_statement(statement_vec));
+        }
+        println!("Statements: {:?}", statements);
     }
 }
 
