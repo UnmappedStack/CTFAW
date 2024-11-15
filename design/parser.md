@@ -11,3 +11,8 @@ Go through each function declaration and add it to the function table. For each 
 2. Add it to the statement list.
     - If there are any sub-statements within, parse them and point to it from this statement list entry recursively.
     - If there are any expressions within, parse them and create an AST which is pointed to by this statement list entry.
+
+**Function table layout**
+| **FnName** | **Signature** | **Statement list** |
+|.----------.|.-------------.|.------------------.|
+| ...        | ...           | ...                |

@@ -13,7 +13,7 @@ pub enum Operation {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Mathematical operators
-    Ops(Operation), Lparen, Rparen,
+    Ops(Operation), Lparen, Rparen, Arrow,
     
     // Bitwise operators
     BitOr, BitNot, LeftShift, RightShift,
@@ -61,7 +61,6 @@ pub fn lex(txt: &str) -> Vec<Token> {
             ':' => tokens.push(Token::Colon),
             ',' => tokens.push(Token::Comma),
             '+' => tokens.push(Token::Ops(Operation::Add)),
-            '-' => tokens.push(Token::Ops(Operation::Sub)),
             '(' => tokens.push(Token::Lparen),
             ')' => tokens.push(Token::Rparen),
             '^' => tokens.push(Token::Ops(Operation::Pow)),
@@ -71,41 +70,47 @@ pub fn lex(txt: &str) -> Vec<Token> {
             '{' => tokens.push(Token::Lbrace),
             '}' => tokens.push(Token::Rbrace),
             // some less easy ones
+            '-' => {
+                match next {
+                    '>' => {tokens.push(Token::Arrow); iter.next(); c += 1;}
+                    _ => tokens.push(Token::Ops(Operation::Sub)),
+                }
+            },
             '=' => {
                 match next {
-                    '=' => {tokens.push(Token::Equ); iter.next();},
+                    '=' => {tokens.push(Token::Equ); iter.next(); c += 1;}
                     _ => tokens.push(Token::Assign),
                 }
             },
             '&' => {
                 match next {
-                    '&' => {tokens.push(Token::And); iter.next();},
+                    '&' => {tokens.push(Token::And); iter.next(); c += 1;}
                     _ => tokens.push(Token::Ampersand), // could be deref *or* bitwise AND. That's for the parser to work out.
                 }
             },
             '*' => {
                 match next {
-                    '*' => {tokens.push(Token::Ops(Operation::Pow)); iter.next();},
+                    '*' => {tokens.push(Token::Ops(Operation::Pow)); iter.next(); c += 1;}
                     _ => tokens.push(Token::Ops(Operation::Star)),
                 }
             },
             '|' => {
                 match next {
-                    '|' => {tokens.push(Token::Or); iter.next();},
+                    '|' => {tokens.push(Token::Or); iter.next(); c += 1;}
                     _ => tokens.push(Token::BitOr),
                 }
             },
             '>' => {
                 match next {
-                    '>' => {tokens.push(Token::RightShift); iter.next();},
-                    '=' => {tokens.push(Token::GreaterEqu); iter.next();},
+                    '>' => {tokens.push(Token::RightShift); iter.next(); c += 1;}
+                    '=' => {tokens.push(Token::GreaterEqu); iter.next(); c += 1;}
                     _ => tokens.push(Token::Greater),
                 }
             },
             '<' => {
                 match next {
-                    '<' => {tokens.push(Token::LeftShift); iter.next();},
-                    '=' => {tokens.push(Token::LessEqu); iter.next();},
+                    '<' => {tokens.push(Token::LeftShift); iter.next(); c += 1;}
+                    '=' => {tokens.push(Token::LessEqu); iter.next(); c += 1;}
                     _ => tokens.push(Token::Less),
                 }
             },

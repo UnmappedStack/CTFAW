@@ -1,16 +1,17 @@
-expression     -> literal
-               | unary
-               | binary
-               | grouping
-               | IDENTIFIER ;
+expression          -> literal
+                    | unary
+                    | binary
+                    | grouping
+                    | IDENTIFIER ;
 
-literal        -> INT | FLOAT | "true" | "false" ;
-grouping       -> "(" expression ")" ;
-unary          -> ( "-" | "!" ) expression ;
-binary         -> expression operator expression ;
-operator       -> "==" | "!=" | "<" | "<=" | ">" | ">="
-               | "+"  | "-"  | "*" | "/" ;
-define         -> ("const" | "let") IDENTIFIER ":" TYPE "=" expression ;
-assign         -> IDENTIFIER "=" expression ;
-inline asm     -> "asm(" STRING ":" (IDENTIFIER "|" STRING)* ":" (IDENTIFIER "|" STRING)* ":" STRING* ")" ;
-function call -> IDENTIFIER "(" expression* ")" ;
+literal             -> INT | FLOAT | "true" | "false" ;
+grouping            -> "(" expression ")" ;
+unary               -> ( "-" | "!" ) expression ;
+binary              -> expression operator expression ;
+operator            -> "==" | "!=" | "<" | "<=" | ">" | ">="
+                        | "+"  | "-"  | "*" | "/" ;
+define              -> ( "const" | "let" ) IDENTIFIER ":" TYPE "=" expression ;
+assign              -> IDENTIFIER "=" expression ;
+inline asm          -> "asm(" STRING ":" ( IDENTIFIER "|" STRING )* ":" ( IDENTIFIER "|" STRING )* ":" STRING* ")" ;
+function call       -> IDENTIFIER "(" expression* ")" ;
+function definition -> "func" IDENTIFIER "(" ( IDENTIFIER ":" TYPE )* ") {" BODY "}" ;

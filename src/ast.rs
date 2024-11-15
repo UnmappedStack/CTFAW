@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 use crate::lexer::*;
-use crate::parser::*;
+use crate::statements::*;
 
 #[derive(Debug, Clone)]
 pub enum BranchChild {
