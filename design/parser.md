@@ -13,6 +13,7 @@ Go through each function declaration and add it to the function table. For each 
     - If there are any expressions within, parse them and create an AST which is pointed to by this statement list entry.
 
 **Function table layout**
+
 | **FnName** | **Signature** | **Statement list** |
-|.----------.|.-------------.|.------------------.|
+|:----------:|:-------------:|:------------------:|
 | ...        | ...           | ...                |
