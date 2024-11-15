@@ -4,6 +4,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use std::collections::HashMap;
 use crate::statements::*;
 use crate::lexer::*;
 
@@ -13,16 +14,29 @@ struct FuncArg {
     val: String,
 }
 
+#[derive(Debug)]
 struct FuncSig {
     ret_type: Token,
     identifier: String,
     args: Vec<FuncArg>,
 }
 
+#[derive(Debug)]
+struct FuncTableVal {
+    signature: FuncSig,
+    statements: Vec<Statement>,
+}
+
 /* Function declaration syntax:
  * func fnName(arg: type, arg: type) -> retType {}
+ *  -- OR --
+ * func fnName(arg: type, arg: type) {}
+ *
+ * Note that if a return type isn't specified, then U32 is assumed and 0 will be returned by
+ * default. In my opinion this is cleaner than using a void type.
  */
 pub fn parse(tokens: Vec<Token>) {
+    let mut function_table = HashMap::new();
     for (i, token) in tokens.iter().enumerate() {
         if *token != Token::Func { continue }
         // it's a function declaration indeed. Get the identifier.
@@ -32,7 +46,6 @@ pub fn parse(tokens: Vec<Token>) {
             assert!(false, "Expected function identifier after `func` declaration, got something else. Failed to compile.");
             String::from("ctfaw_failure")
         };
-        println!("Identifier: {}", identifier);
         // Get the args
         let mut args = Vec::new();
         let mut decl_iter = tokens.iter().skip(i + 2);
@@ -63,14 +76,12 @@ pub fn parse(tokens: Vec<Token>) {
                 val: identifier,
             });
         }
-        println!("Arg list: {:?}", args);
         let rettype = if *decl_iter.next().unwrap() == Token::Arrow {
             offset += 2;
             decl_iter.next().unwrap().clone()
         } else {
             Token::U32
         };
-        println!("Return type: {:?}", rettype);
         assert!(*decl_iter.next().unwrap() == Token::Lbrace, "Expected right brace (`{{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut i = 0;
@@ -84,7 +95,6 @@ pub fn parse(tokens: Vec<Token>) {
             i += 1;
         }
         let statement_tokens = &tokens[offset..offset + i];
-        println!("Statement tokens: {:?}", statement_tokens);
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| *e == Token::Endln)
             .filter(|v| !v.is_empty())
@@ -93,23 +103,19 @@ pub fn parse(tokens: Vec<Token>) {
         for statement in statements_before_parse {
             let mut statement_vec = Vec::from(statement);
             statement_vec.push(Token::Endln);
-            println!("Parsing statement: {:?}", statement_vec);
             statements.push(parse_statement(statement_vec));
         }
-        println!("Statements: {:?}", statements);
+        function_table.insert(
+            identifier.clone(),
+            FuncTableVal {
+                signature: FuncSig {
+                    ret_type: rettype,
+                    identifier,
+                    args,
+                },
+                statements,
+            }
+        );
     }
+    println!("Table produced: {:?}", function_table);
 }
-
-/*
- *struct FuncSig {
- *    ret_type: Token,
- *    identifier: String,
- *    args: Vec<FuncArg>,
- *}
- */
-
-
-
-
-
-
