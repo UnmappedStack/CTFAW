@@ -26,7 +26,7 @@ This will output some debug information such as a list of tokens and ASTs, state
     - [X] Basic expression parsing & AST generation
     - [X] Support bracketes in expression parsing
     - [X] Basic statement lists generation
-    - [ ] Function table generation
+    - [X] Function table generation
 - [ ] Semantic analysis
 
 **Backend**
