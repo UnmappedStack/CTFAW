@@ -30,16 +30,16 @@ pub struct FuncCallStatement {
 
 #[derive(Debug, Clone)]
 pub struct AsmIOEntry {
-    register: String,
-    identifier: String,
+    pub register: String,
+    pub identifier: String,
 }
 
 #[derive(Debug)]
 pub struct InlineAsmStatement {
-    asm: String,
-    inputs: Vec<AsmIOEntry>,
-    outputs: Vec<AsmIOEntry>,
-    clobbers: Vec<String>,
+    pub asm: String,
+    pub inputs: Vec<AsmIOEntry>,
+    pub outputs: Vec<AsmIOEntry>,
+    pub clobbers: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -132,7 +132,7 @@ fn get_index(v: Vec<Token>, occurrence: usize, value: Token) -> Option<usize> {
  *      ^              ^                                   ^               ^
  * asm source       inputs list                        outputs list     clobbered register list
  */ 
-fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
+pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     let asm = if let Token::Str(val) = tokens[2].clone() {
         val
     } else {

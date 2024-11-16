@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-
 mod lexer;
 mod parser;
 mod statements;
@@ -8,9 +6,15 @@ mod backend;
 mod error;
 
 fn main() {
-    let input: &str = "let var: u64 = 23 * 4 - 3 / 4;"; // just as a test
+    let input: &str = "asm(\";; Inline asm:\nmov rax, 15\nmov rbx, rax\n;; End inline asm\" : \"rax\" | var : \"rbx\" | var2 : \"rax\", \"rbx\");"; // just as a test
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    assert!(false, "No current tests.");
+    let statement = if let statements::Statement::InlineAsm(val) = statements::parse_inline_asm_statement(tokens) {
+        Some(val)
+    } else {
+        assert!(false, "Expected inline assembly statement.");
+        None
+    };
+    backend::compile_inline_asm(statement.unwrap());
 }

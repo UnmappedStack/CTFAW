@@ -78,3 +78,28 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement) {
     compile_expression(out, statement.expr);
     let _ = out.text.write_fmt(format_args!("mov [{}], rax", statement.identifier));
 }
+
+pub fn compile_inline_asm(statement: InlineAsmStatement) {
+    let mut out = CompiledAsm{ text: String::new(), data: String::new() };
+    for clobber in &statement.clobbers {
+        let _ = out.text.write_fmt(format_args!("push {}\n", clobber));
+    }
+    for input in statement.inputs {
+        let _ = out.text.write_fmt(format_args!("mov {}, [{}]\n", input.register, input.identifier));
+    }
+    let _ = out.text.write_fmt(format_args!("{}\n", statement.asm));
+    for output in statement.outputs {
+        let _ = out.text.write_fmt(format_args!("mov [{}], {}\n", output.identifier, output.register));
+    }
+    for clobber in &statement.clobbers {
+        let _ = out.text.write_fmt(format_args!("pop {}\n", clobber));
+    }
+    println!("\nsection .text\n\n{}\n", out.text);
+    println!("\nsection .data\n\n{}\n", out.data);
+}
+
+
+
+
+
+
