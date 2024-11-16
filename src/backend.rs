@@ -5,6 +5,9 @@ use crate::lexer::*;
 use crate::ast::*;
 use std::fmt::Write;
 
+// Registers in order of arguments for passing into a function with the SYS-V ABI
+const REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+
 pub struct CompiledAsm {
     text: String,
     data: String,
@@ -52,6 +55,9 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
             // just return the value
             let _ = out.text.write_fmt(format_args!("mov rax, {} ;; -- Move immediate --\n", val));
         },
+        BranchChild::Fn(val) => {
+            compile_func_call(out, val);
+        },
         _ => {
             assert!(false, "Not implemented yet, expressions can't yet handle identifiers, function calls, or floating point values.");
         }
@@ -79,8 +85,7 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement) {
     let _ = out.text.write_fmt(format_args!("mov [{}], rax", statement.identifier));
 }
 
-pub fn compile_inline_asm(statement: InlineAsmStatement) {
-    let mut out = CompiledAsm{ text: String::new(), data: String::new() };
+pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement) {
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("push {}\n", clobber));
     }
@@ -94,11 +99,20 @@ pub fn compile_inline_asm(statement: InlineAsmStatement) {
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("pop {}\n", clobber));
     }
-    println!("\nsection .text\n\n{}\n", out.text);
-    println!("\nsection .data\n\n{}\n", out.data);
 }
 
-
+pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement) {
+    for arg in 0..statement.args.len() {
+        write_text(&mut out.text, "push rax");
+        compile_expression(out, statement.args[arg].clone());
+        if arg < 6 {
+            let _ = out.text.write_fmt(format_args!("mov {}, rax\npop rax\n", REGS[arg]));
+        } else {
+            let _ = out.text.write_fmt(format_args!("mov r15, rax\npop rax\npush r15\n"));
+        }
+    }
+    let _ = out.text.write_fmt(format_args!("call {}\n", statement.fn_ident));
+}
 
 
 
