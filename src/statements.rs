@@ -8,7 +8,7 @@ use crate::ast::*;
 // Some structures first need to be defined
 // TODO: Add a generic assign statement used for both assigning existing vars and defining new ones
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DefineStatement {
     is_const: bool,
     pub identifier: String,
@@ -16,7 +16,7 @@ pub struct DefineStatement {
     pub expr: BranchChild,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssignStatement {
     pub identifier: String,
     pub expr: BranchChild,
@@ -34,7 +34,7 @@ pub struct AsmIOEntry {
     pub identifier: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InlineAsmStatement {
     pub asm: String,
     pub inputs: Vec<AsmIOEntry>,
@@ -42,7 +42,7 @@ pub struct InlineAsmStatement {
     pub clobbers: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Define(DefineStatement),
     Assign(AssignStatement),

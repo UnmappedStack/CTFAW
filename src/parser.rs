@@ -9,22 +9,22 @@ use crate::statements::*;
 use crate::lexer::*;
 
 #[derive(Debug)]
-struct FuncArg {
-    arg_type: Token,
-    val: String,
+pub struct FuncArg {
+    pub arg_type: Token,
+    pub val: String,
 }
 
 #[derive(Debug)]
-struct FuncSig {
-    ret_type: Token,
-    identifier: String,
-    args: Vec<FuncArg>,
+pub struct FuncSig {
+    pub ret_type: Token,
+    pub identifier: String,
+    pub args: Vec<FuncArg>,
 }
 
 #[derive(Debug)]
-struct FuncTableVal {
-    signature: FuncSig,
-    statements: Vec<Statement>,
+pub struct FuncTableVal {
+    pub signature: FuncSig,
+    pub statements: Vec<Statement>,
 }
 
 /* Function declaration syntax:
@@ -35,9 +35,17 @@ struct FuncTableVal {
  * Note that if a return type isn't specified, then U32 is assumed and 0 will be returned by
  * default. In my opinion this is cleaner than using a void type.
  */
-pub fn parse(tokens: Vec<Token>) {
+pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
     let mut function_table = HashMap::new();
+    let mut skip = 0;
     for (i, token) in tokens.iter().enumerate() {
+        if skip > 0 {
+            skip -= 1;
+            continue;
+        }
+        if *token == Token::Let || *token == Token::Const {
+            assert!(false, "Global variables are not implemented yet.");
+        }
         if *token != Token::Func { continue }
         // it's a function declaration indeed. Get the identifier.
         let identifier = if let Token::Ident(val) = &tokens[i + 1] {
@@ -76,13 +84,17 @@ pub fn parse(tokens: Vec<Token>) {
                 val: identifier,
             });
         }
-        let rettype = if *decl_iter.next().unwrap() == Token::Arrow {
+        let next_tok = decl_iter.next().unwrap();
+        let mut to_check = next_tok.clone();
+        let rettype = if *next_tok == Token::Arrow {
             offset += 2;
-            decl_iter.next().unwrap().clone()
+            let result = decl_iter.next().unwrap().clone();
+            to_check = decl_iter.next().unwrap().clone();
+            result
         } else {
             Token::U32
         };
-        assert!(*decl_iter.next().unwrap() == Token::Lbrace, "Expected right brace (`{{`) after function declaration, got something else.");
+        assert!(to_check == Token::Lbrace, "Expected left brace (`{{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut i = 0;
         while let Some(this_token) = decl_iter.next() {
@@ -95,6 +107,7 @@ pub fn parse(tokens: Vec<Token>) {
             i += 1;
         }
         let statement_tokens = &tokens[offset..offset + i];
+        skip = offset + 1;
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| *e == Token::Endln)
             .filter(|v| !v.is_empty())
@@ -117,5 +130,5 @@ pub fn parse(tokens: Vec<Token>) {
             }
         );
     }
-    println!("Table produced: {:?}", function_table);
+    function_table
 }

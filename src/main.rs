@@ -8,9 +8,10 @@ mod backend;
 mod error;
 
 fn main() {
-    let input: &str = "fnName(1, 2, 3, 4, 5, 6, 7);"; // just as a test
+    let input: &str = "func fnName(num: u64, num2: u64) {let var: u64 = 12;}"; // just as a test
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    assert!(false, "No tests to run.");
+    let ir = parser::parse(tokens);
+    backend::compile(ir);
 }
