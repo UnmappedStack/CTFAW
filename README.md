@@ -34,8 +34,8 @@ This will output some debug information such as a list of tokens and ASTs, state
  - [X] Define & assign statements compilation
  - [X] Inline assembly compilation
  - [X] Function call compilation
- - [ ] Compiling specific functions & their statement lists
- - [ ] Local variables and scope
+ - [X] Compiling specific functions & their statement lists
+ - [X] Local variables and scope
  - [ ] More to come...
 
 You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
