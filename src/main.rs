@@ -2,12 +2,15 @@ mod lexer;
 mod parser;
 mod statements;
 mod ast;
+mod backend;
 mod error;
 
 fn main() {
-    let input: &str = "func fnName(arg1: u32, arg2: f64) -> u64 {let var: u64 = 21;doStuff(var);}"; // just as a test
+    let input: &str = "23 * 4 - 3 / 4"; // just as a test
     println!("Full input: {}", input);
 
     let tokens = lexer::lex(input);
-    parser::parse(tokens);
+    let ast = ast::parse_expression(tokens);
+
+    backend::compile_expression(ast);
 }

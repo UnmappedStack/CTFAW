@@ -17,9 +17,9 @@ pub enum BranchChild {
 
 #[derive(Debug, Clone)]
 pub struct ASTBranch {
-    left_val: Box<BranchChild>,
-    op: Operation,
-    right_val: Box<BranchChild>,
+    pub left_val: Box<BranchChild>,
+    pub op: Operation,
+    pub right_val: Box<BranchChild>,
 }
 
 /* Helper function to print X spaces */
@@ -106,10 +106,6 @@ fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation,
 
 fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
     let mut tokens_len = tokens.len();
-    if tokens[0] == Token::Lparen && tokens[tokens_len - 1] == Token::Rparen {
-        tokens = &tokens[1..tokens_len - 1];
-        tokens_len -= 2;
-    }
     if tokens_len == 1 {
         // It's a number so return a child with just a number
         match &tokens[0] {
@@ -122,6 +118,10 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
                 return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy
             },
         }
+    }
+    if tokens[0] == Token::Lparen && tokens[tokens_len - 1] == Token::Rparen {
+        tokens = &tokens[1..tokens_len - 1];
+        tokens_len -= 2;
     }
     if let Token::Ident(val) = &tokens[0] {
         if (tokens[1] == Token::Lparen) && (tokens[tokens_len - 1] == Token::Rparen) {
