@@ -11,15 +11,15 @@ use crate::ast::*;
 #[derive(Debug)]
 pub struct DefineStatement {
     is_const: bool,
-    identifier: String,
+    pub identifier: String,
     def_type: Token,
-    expr: BranchChild,
+    pub expr: BranchChild,
 }
 
 #[derive(Debug)]
 pub struct AssignStatement {
-    identifier: String,
-    expr: BranchChild,
+    pub identifier: String,
+    pub expr: BranchChild,
 }
 
 #[derive(Debug, Clone)]
@@ -60,7 +60,7 @@ fn token_is_type(token: Token) -> bool {
     token == Token::Boolean
 }
 
-fn parse_define_statement(tokens: Vec<Token>) -> Statement {
+pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
     let is_const = tokens[0] == Token::Const;
     let identifier = if let Token::Ident(val) = tokens[1].clone() {
         val

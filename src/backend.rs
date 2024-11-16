@@ -1,23 +1,35 @@
+#![allow(dead_code, unused_variables)]
+
+use crate::statements::*;
 use crate::lexer::*;
 use crate::ast::*;
+use std::fmt::Write;
 
-/* The result of a single AST branch is stored in RAX. */
+pub struct CompiledAsm {
+    text: String,
+    data: String,
+}
+
+fn write_text(txt: &mut String, new: &str) {
+    let _ = txt.write_str(new);
+    let _ = txt.write_str("\n");
+}
 
 /* Operands are in rax and rbx, and returns in rax. */
-fn compile_operation(op: Operation) {
+fn compile_operation(out: &mut CompiledAsm, op: Operation) {
     match op {
         Operation::Star => {
-            println!("mul rbx");
+            write_text(&mut out.text, "mul rbx");
         },
         Operation::Add => {
-            println!("add rax, rbx");
+            write_text(&mut out.text, "add rax, rbx");
         },
         Operation::Sub => {
-            println!("sub rbx, rax");
-            println!("mov rax, rbx");
+            write_text(&mut out.text, "sub rbx, rax");
+            write_text(&mut out.text, "mov rax, rbx");
         },
         Operation::Div => {
-            println!("div rbx");
+            write_text(&mut out.text, "div rbx");
         },
         _ => {
             assert!(false, "Unsupported operation.");
@@ -25,19 +37,20 @@ fn compile_operation(op: Operation) {
     }
 }
 
-fn compile_ast_branch(branch: BranchChild) {
+/* The result of a single AST branch is stored in RAX. */
+fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
     match branch {
         BranchChild::Branch(val) => {
             // compile it as a branch
-            compile_ast_branch(*val.left_val);
-            println!("push rax");
-            compile_ast_branch(*val.right_val);
-            println!("pop rbx");
-            compile_operation(val.op);
+            compile_ast_branch(out, *val.left_val);
+            write_text(&mut out.text, "push rax");
+            compile_ast_branch(out, *val.right_val);
+            write_text(&mut out.text, "pop rbx");
+            compile_operation(out, val.op);
         },
         BranchChild::Int(val) => {
             // just return the value
-            println!("mov rax, {} ;; -- Move immediate --", val);
+            let _ = out.text.write_fmt(format_args!("mov rax, {} ;; -- Move immediate --\n", val));
         },
         _ => {
             assert!(false, "Not implemented yet, expressions can't yet handle identifiers, function calls, or floating point values.");
@@ -45,13 +58,23 @@ fn compile_ast_branch(branch: BranchChild) {
     }
 }
 
-pub fn compile_expression(ast: BranchChild) {
-    println!("Tree: {:?}", ast);
+pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild) {
     if let BranchChild::Branch(_) = ast {
-        println!("push rbx");
-        compile_ast_branch(ast);
-        println!("pop rbx");
+        write_text(&mut out.text, "push rbx");
+        compile_ast_branch(out, ast);
+        write_text(&mut out.text, "pop rbx");
     } else {
-        compile_ast_branch(ast);
+        compile_ast_branch(out, ast);
     }
+}
+
+pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement) {
+    let _ = out.data.write_fmt(format_args!("{}: dq 0", statement.identifier));
+    compile_expression(out, statement.expr);
+    let _ = out.text.write_fmt(format_args!("mov [{}], rax", statement.identifier));
+}
+
+pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement) {
+    compile_expression(out, statement.expr);
+    let _ = out.text.write_fmt(format_args!("mov [{}], rax", statement.identifier));
 }
