@@ -33,7 +33,7 @@ This will output some debug information such as a list of tokens and ASTs, state
  - [X] Expression compilation (AST -> Assembly)
  - [X] Define & assign statements compilation
  - [X] Inline assembly compilation
- - [ ] Function call compilation
+ - [X] Function call compilation
  - [ ] Compiling specific functions & their statement lists
  - [ ] Local variables and scope
  - [ ] More to come...
