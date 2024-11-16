@@ -1,5 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
+use std::io::Write as FileWrite;
+use std::fs::File;
 use std::collections::HashMap;
 use crate::parser::*;
 use crate::statements::*;
@@ -159,9 +161,11 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
             }
         };
     }
-    println!("\n[BITS 64]\nglobal _start");
-    println!("\nsection .text\n\n{}\n", out.text);
-    println!("section .data\n\n{}\n", out.data);
+    
+    let mut file = File::create("out.asm").expect("Couldn't open file");
+    let _ = file.write_all(format!("[BITS 64]\nglobal _start").as_bytes());
+    let _ = file.write_all(format!("\nsection .text\n\n{}\n\n", out.text).as_bytes());
+    let _ = file.write_all(format!("section .data\n\n{}\n", out.data).as_bytes());
 }
 
 

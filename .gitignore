@@ -1,3 +1,6 @@
+out.asm
+out
+*.o
 /target
 *.swp
 Cargo.lock
