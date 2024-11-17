@@ -29,6 +29,9 @@ This will output some debug information such as a list of tokens and ASTs, state
     - [X] Support bracketes in expression parsing
     - [X] Basic statement lists generation
     - [X] Function table generation
+- [X] Support escape characters (`\n`, `\t`, `\"`, etc.)
+- [X] String literal support
+- [ ] Return statement support
 - [ ] Semantic analysis
 
 **Backend**
@@ -38,6 +41,8 @@ This will output some debug information such as a list of tokens and ASTs, state
  - [X] Function call compilation
  - [X] Compiling specific functions & their statement lists
  - [X] Local variables and scope
+ - [ ] String literals
+ - [ ] Return statements
  - [ ] More to come...
 
 You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
