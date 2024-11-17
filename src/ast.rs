@@ -165,7 +165,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
 /* Parses an expression into an AST.
  * Takes a list of tokens, all of which must be an operator, grouping symbol, number, or
  * identifier. Returns an ASTNode which is the root of an AST for this expression. */
-pub fn parse_expression(tokens: Vec<Token>) -> BranchChild {
+pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
     let priorities_map: HashMap<Operation, u8> = HashMap::from([
         (Operation::Pow, 1),
         (Operation::Star, 2),
@@ -175,3 +175,9 @@ pub fn parse_expression(tokens: Vec<Token>) -> BranchChild {
     ]);
     optimisation::fold_expr(*parse_branch(&tokens[..], &priorities_map))
 }
+
+pub fn parse_expression(tokens: Vec<Token>) -> BranchChild {
+    parse_expression_full(tokens).1
+}
+
+

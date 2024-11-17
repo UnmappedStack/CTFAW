@@ -46,8 +46,8 @@ fn fold_branch(branch: &mut BranchChild) -> bool {
     }
 }
 
-pub fn fold_expr(ast: BranchChild) -> BranchChild {
+pub fn fold_expr(ast: BranchChild) -> (bool, BranchChild) {
     let mut ast_clone = ast.clone();
     let can_fold = fold_branch(&mut ast_clone);
-    if can_fold { ast_clone } else { ast }
+    if can_fold { (can_fold, ast_clone) } else { (can_fold, ast) }
 }

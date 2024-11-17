@@ -1,9 +1,11 @@
+const globalthing: u64 = 21 + 3 * 2;
+
 func main() {
     let msg: u64 = "hello world!\n";
     let num: u64 = 5;
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
-    return 42 + num;
+    return 42 + globalthing;
 }
 
 func _start() {

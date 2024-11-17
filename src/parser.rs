@@ -5,6 +5,8 @@
 #![allow(dead_code, unused_variables)]
 
 use std::collections::HashMap;
+use crate::optimisation;
+use crate::ast::*;
 use crate::statements::*;
 use crate::lexer::*;
 
@@ -27,6 +29,12 @@ pub struct FuncTableVal {
     pub statements: Vec<Statement>,
 }
 
+#[derive(Debug, Clone)]
+pub struct GlobalVar {
+    pub identifier: String,
+    pub val: u64,
+}
+
 /* Function declaration syntax:
  * func fnName(arg: type, arg: type) -> retType {}
  *  -- OR --
@@ -35,7 +43,7 @@ pub struct FuncTableVal {
  * Note that if a return type isn't specified, then U32 is assumed and 0 will be returned by
  * default. In my opinion this is cleaner than using a void type.
  */
-pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
+pub fn parse(tokens: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> HashMap<String, FuncTableVal> {
     let mut function_table = HashMap::new();
     let mut skip = 0;
     for (i, token) in tokens.iter().enumerate() {
@@ -43,8 +51,21 @@ pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
             skip -= 1;
             continue;
         }
-        if *token == Token::Let || *token == Token::Const {
-            assert!(false, "Global variables are not implemented yet.");
+        if *token == Token::Let {
+            assert!(false, "Global variables must be constant, but one was defined with the `let` keyword.");
+        }
+        if *token == Token::Const {
+            let mut n = 0;
+            let mut global_iter = tokens.iter().skip(i);
+            while let Some(this_token) = global_iter.next() {
+                if *this_token == Token::Endln { break }
+                n += 1;
+            }
+            let global_def_statement = if let Statement::Define(v) = parse_define_statement(Vec::from(&tokens[i..i + n + 1])) {Some(v)} else { assert!(false, "unreachable"); None };
+            let (can_fold, new_ast) = optimisation::fold_expr(global_def_statement.as_ref().unwrap().expr.clone());
+            assert!(can_fold, "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
+            let val = if let BranchChild::Int(v) = global_def_statement.clone().unwrap().expr { v } else { assert!(false, "unreachable"); 0 };
+            global_vars.push(GlobalVar { identifier: global_def_statement.unwrap().identifier, val });
         }
         if *token != Token::Func { continue }
         // it's a function declaration indeed. Get the identifier.
