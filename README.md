@@ -14,11 +14,10 @@ Don't use it. It's still very much a WIP.
 
 ## Quickstart
 
-Unfortunately CTFAW isn't yet at a point where it's ready to compile any file you want. To test out what's going on so far, simply run:
 ```shell
-$ cargo run
+$ cargo run <input file>
 ```
-This will output some debug information such as a list of tokens and ASTs, statement lists, and function tables.
+This will build an assembly file (stored in `./out.asm`), then call LD and NASM to build a final executable (`./out`). It is run automatically.
 
 ## Roadmap
 
@@ -31,7 +30,7 @@ This will output some debug information such as a list of tokens and ASTs, state
     - [X] Function table generation
 - [X] Support escape characters (`\n`, `\t`, `\"`, etc.)
 - [X] String literal support
-- [ ] Return statement support
+- [X] Return statement support
 - [ ] Semantic analysis
 
 **Backend**
@@ -42,7 +41,7 @@ This will output some debug information such as a list of tokens and ASTs, state
  - [X] Compiling specific functions & their statement lists
  - [X] Local variables and scope
  - [X] String literals
- - [ ] Return statements
+ - [X] Return statements
  - [ ] More to come...
 
 You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
