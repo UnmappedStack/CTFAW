@@ -1,5 +1,6 @@
 func _start() {
+    let var: u64 = 4 + 3;
+    // exit syscall to return the contents of var
     asm("mov rax, 60
-mov rdi, 5
-syscall" : : : );
+syscall" : "rdi" | var : :);
 }

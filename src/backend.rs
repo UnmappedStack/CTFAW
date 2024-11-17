@@ -78,42 +78,40 @@ pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild) {
     }
 }
 
+fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
+    match allvars.iter().position(|s| *s == v) {
+        Some(val) => {
+            val * 8
+        },
+        None => {
+            assert!(false, "Variable not defined in current scope.");
+            0
+        }
+    }
+}
+
 pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<String>) {
     //let _ = out.data.write_fmt(format_args!("{}: dq 0", statement.identifier));
     compile_expression(out, statement.expr);
-     match allvars.iter().position(|s| *s == statement.identifier) {
-        Some(val) => {
-            let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax", val * 8));
-        },
-        None => {
-            assert!(false, "Can't assign to undefined variable.");
-        }
-    };
+    let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax\n", get_local_offset(statement.identifier, allvars)));
 
 }
 
 pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<String>) {
     compile_expression(out, statement.expr);
-    match allvars.iter().position(|s| *s == statement.identifier) {
-        Some(val) => {
-            let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax", val * 8));
-        },
-        None => {
-            assert!(false, "Can't assign to undefined variable.");
-        }
-    };
+    let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax\n", get_local_offset(statement.identifier, allvars)));
 }
 
-pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement) {
+pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<String>) {
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("push {}\n", clobber));
     }
     for input in statement.inputs {
-        let _ = out.text.write_fmt(format_args!("mov {}, [{}]\n", input.register, input.identifier));
+        let _ = out.text.write_fmt(format_args!("mov {}, [rsp - {} + {}]\n", input.register, 8 * statement.clobbers.len(),  get_local_offset(input.identifier, allvars.clone())));
     }
     let _ = out.text.write_fmt(format_args!("{}\n", statement.asm));
     for output in statement.outputs {
-        let _ = out.text.write_fmt(format_args!("mov [{}], {}\n", output.identifier, output.register));
+        let _ = out.text.write_fmt(format_args!("mov [rsp - {} + {}], {}\n", 8 * statement.clobbers.len(), get_local_offset(output.identifier, allvars.clone()), output.register));
     }
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("pop {}\n", clobber));
@@ -155,7 +153,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
             match statement {
                 Statement::Assign(v) => { compile_assign(&mut out, v, all_vars.clone()) },
                 Statement::Define(v) => { compile_define(&mut out, v, all_vars.clone()) },
-                Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v) },
+                Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, v) },
                 _ => { assert!(false, "Cannot compile this statement") }
             }

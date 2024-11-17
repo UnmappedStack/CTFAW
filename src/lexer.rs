@@ -208,7 +208,6 @@ pub fn lex(txt: &str) -> Vec<Token> {
         }
         c += 1;
     }
-    println!("\r\nToken list: {:?}", tokens);
     tokens
 }
 
