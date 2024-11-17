@@ -107,7 +107,7 @@ pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
             n += 1;
         }
         let statement_tokens = &tokens[offset..offset + n];
-        skip = offset + 1;
+        skip = n + 1;
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| *e == Token::Endln)
             .filter(|v| !v.is_empty())

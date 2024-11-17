@@ -24,6 +24,18 @@ fn write_text(txt: &mut String, new: &str) {
     let _ = txt.write_str("\n");
 }
 
+fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
+    match allvars.iter().position(|s| *s == v) {
+        Some(val) => {
+            val * 8
+        },
+        None => {
+            assert!(false, "Variable not defined in current scope.");
+            0
+        }
+    }
+}
+
 /* Operands are in rax and rbx, and returns in rax. */
 fn compile_operation(out: &mut CompiledAsm, op: Operation) {
     match op {
@@ -47,13 +59,13 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation) {
 }
 
 /* The result of a single AST branch is stored in RAX. */
-fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
+fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<String>) {
     match branch {
         BranchChild::Branch(val) => {
             // compile it as a branch
-            compile_ast_branch(out, *val.left_val);
+            compile_ast_branch(out, *val.left_val, allvars.clone());
             write_text(&mut out.text, "push rax");
-            compile_ast_branch(out, *val.right_val);
+            compile_ast_branch(out, *val.right_val, allvars);
             write_text(&mut out.text, "pop rbx");
             compile_operation(out, val.op);
         },
@@ -61,8 +73,11 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
             // just return the value
             let _ = out.text.write_fmt(format_args!("mov rax, {}\n", val));
         },
+        BranchChild::Ident(val) => {
+            let _ = out.text.write_fmt(format_args!("mov rax, [rdi + {}]\n", get_local_offset(val, allvars)));
+        },
         BranchChild::Fn(val) => {
-            compile_func_call(out, val);
+            compile_func_call(out, val, allvars);
         },
         BranchChild::StrLit(val) => {
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
@@ -77,42 +92,31 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
     }
 }
 
-pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild) {
+pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<String>) {
+    write_text(&mut out.text, "mov rdi, rsp");
     if let BranchChild::Branch(_) = ast {
         write_text(&mut out.text, "push rbx");
-        compile_ast_branch(out, ast);
+        compile_ast_branch(out, ast, allvars);
         write_text(&mut out.text, "pop rbx");
     } else {
-        compile_ast_branch(out, ast);
-    }
-}
-
-fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
-    match allvars.iter().position(|s| *s == v) {
-        Some(val) => {
-            val * 8
-        },
-        None => {
-            assert!(false, "Variable not defined in current scope.");
-            0
-        }
+        compile_ast_branch(out, ast, allvars);
     }
 }
 
 pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<String>) {
     //let _ = out.data.write_fmt(format_args!("{}: dq 0", statement.identifier));
-    compile_expression(out, statement.expr);
+    compile_expression(out, statement.expr, allvars.clone());
     let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax\n", get_local_offset(statement.identifier, allvars)));
 
 }
 
 pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<String>) {
-    compile_expression(out, statement.expr);
+    compile_expression(out, statement.expr, allvars.clone());
     let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax\n", get_local_offset(statement.identifier, allvars)));
 }
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, func: FuncTableVal) {
-    compile_expression(out, expr); // this already puts it into rax
+    compile_expression(out, expr, allvars.clone()); // this already puts it into rax
     for (i, v) in allvars.iter().enumerate() {
         let _ = out.text.write_fmt(format_args!("pop rdi\n"));
     }
@@ -135,10 +139,10 @@ pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, 
     }
 }
 
-pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement) {
+pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement, allvars: Vec<String>) {
     for arg in 0..statement.args.len() {
         write_text(&mut out.text, "push rax");
-        compile_expression(out, statement.args[arg].clone());
+        compile_expression(out, statement.args[arg].clone(), allvars.clone());
         if arg < 6 {
             let _ = out.text.write_fmt(format_args!("mov {}, rax\npop rax\n", REGS[arg]));
         } else {
@@ -171,7 +175,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
                 Statement::Assign(v) => { compile_assign(&mut out, v, all_vars.clone()) },
                 Statement::Define(v) => { compile_define(&mut out, v, all_vars.clone()) },
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone()) },
-                Statement::FuncCall(v) => { compile_func_call(&mut out, v) },
+                Statement::FuncCall(v) => { compile_func_call(&mut out, v, all_vars.clone()) },
                 Statement::Return(v) => { compile_return(&mut out, v, all_vars.clone(), val.clone() ) },
                 _ => { assert!(false, "Cannot compile this statement") }
             }

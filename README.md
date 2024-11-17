@@ -35,7 +35,7 @@ This will build an assembly file (stored in `./out.asm`), then call LD and NASM 
 - [ ] More to come...
 
 **Middle end**
-- [ ] Constant folding
+- [X] Constant folding
 - [ ] More to come...
 
 **Backend**

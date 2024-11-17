@@ -8,6 +8,7 @@ mod lexer;
 mod parser;
 mod statements;
 mod ast;
+mod optimisation;
 mod backend;
 mod error;
 

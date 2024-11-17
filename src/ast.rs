@@ -1,8 +1,9 @@
 /* Part of the parser. Generates an AST for a token list representing an expression. */
 
-#![allow(dead_code, unused_variables)]
+#![allow(dead_code, unused_variables, unused_imports)]
 
 use std::collections::HashMap;
+use crate::optimisation;
 use crate::lexer::*;
 use crate::statements::*;
 
@@ -172,5 +173,5 @@ pub fn parse_expression(tokens: Vec<Token>) -> BranchChild {
         (Operation::Sub, 3),
         (Operation::Add, 3),
     ]);
-    *parse_branch(&tokens[..], &priorities_map)
+    optimisation::fold_expr(*parse_branch(&tokens[..], &priorities_map))
 }
