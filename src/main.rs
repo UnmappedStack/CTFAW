@@ -19,13 +19,13 @@ fn main() {
     backend::compile(ir);
     println!("Assembling...");
     Command::new("nasm")
-        .args(["-felf64", "-o", "out.o", "out.asm"])
-        .spawn()
+        .args(["-f", "elf64", "out.asm"])
+        .status()
         .expect("Failed to run assembler");
     println!("Linking...");
     Command::new("ld")
         .args(["-o", "out", "out.o"])
-        .spawn()
+        .status()
         .expect("Failed to run linker");
     println!("Built successfully, trying to run compiled program...");
     let output = Command::new("sh")
