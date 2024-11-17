@@ -45,6 +45,14 @@ fn is_ident_char(ch: char) -> bool {
      || ch == '_' 
 }
 
+fn parse_escape_characters(s: &mut String) {
+    *s = s.replace("\\n", "\n");
+    *s = s.replace("\\\"", "\"");
+    *s = s.replace("\\r", "\r");
+    *s = s.replace("\\t", "\t");
+    *s = s.replace("\\'", "\'");
+}
+
 pub fn lex(txt: &str) -> Vec<Token> {
     let mut iter = txt.chars().peekable();
     let mut tokens = Vec::new();
@@ -164,7 +172,9 @@ pub fn lex(txt: &str) -> Vec<Token> {
                     i += 1;
                 }
                 let s = &txt[c + 1..c + i + 1];
-                tokens.push(Token::Str(String::from(s)));
+                let mut string = String::from(s);
+                parse_escape_characters(&mut string);
+                tokens.push(Token::Str(string));
                 c += i + 1;
                 iter.next();
             }
