@@ -21,33 +21,33 @@ This will build an assembly file (stored in `./out.asm`), then call LD and NASM 
 
 ## Roadmap
 
-**Frontend**
 - [X] Lexer (tokenisation)
-- [X] Basic parser (more will still be added, this isn't all)
-    - [X] Basic expression parsing & AST generation
-    - [X] Support bracketes in expression parsing
-    - [X] Basic statement lists generation
-    - [X] Function table generation
+- [X] Basic parser (AST generation, statement list generation, function table generation)
+- [X] Basic backend and codegen
 - [X] Support escape characters (`\n`, `\t`, `\"`, etc.)
 - [X] String literal support
 - [X] Return statement support
+- [X] Constant folding (Optimisation)
+- [X] Define & assign statements
+- [X] Inline assembly
+- [X] Function calls
+- [X] Local functions & scope
+- [ ] Referencing
+- [ ] Dereferencing
+- [ ] Type checking
+- [ ] Externs & libc compatibility
+- [ ] Logical operations (`&&`, `||`, `!`, etc.)
+- [ ] Bitwise operations (`>>`/`<<`, `|`, `&`, `~`, etc.)
+- [ ] Arrays
+- [ ] Logical blocks
+    - [ ] If
+    - [ ] Else
+    - [ ] Elseif
+    - [ ] While
+    - [ ] For
+- [ ] Decent error handling
 - [ ] Semantic analysis
 - [ ] More to come...
-
-**Middle end**
-- [X] Constant folding
-- [ ] More to come...
-
-**Backend**
- - [X] Expression compilation (AST -> Assembly)
- - [X] Define & assign statements compilation
- - [X] Inline assembly compilation
- - [X] Function call compilation
- - [X] Compiling specific functions & their statement lists
- - [X] Local variables and scope
- - [X] String literals
- - [X] Return statements
- - [ ] More to come...
 
 ## License & Contributing
 
