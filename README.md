@@ -41,7 +41,7 @@ This will output some debug information such as a list of tokens and ASTs, state
  - [X] Function call compilation
  - [X] Compiling specific functions & their statement lists
  - [X] Local variables and scope
- - [ ] String literals
+ - [X] String literals
  - [ ] Return statements
  - [ ] More to come...
 
