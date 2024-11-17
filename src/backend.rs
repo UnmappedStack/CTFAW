@@ -166,6 +166,9 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
                 _ => { assert!(false, "Cannot compile this statement") }
             }
         };
+        for (i, arg) in val.signature.args.iter().enumerate() {
+            let _ = out.text.write_fmt(format_args!("pop {}\n", REGS[i]));
+        }
     }
     
     let mut file = File::create("out.asm").expect("Couldn't open file");
