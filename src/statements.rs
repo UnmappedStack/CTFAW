@@ -48,6 +48,7 @@ pub enum Statement {
     Assign(AssignStatement),
     FuncCall(FuncCallStatement),
     InlineAsm(InlineAsmStatement),
+    Return(BranchChild),
     NullStatement, // NOTE: for debugging only, don't use in the actual compiler!
 }
 
@@ -222,12 +223,20 @@ pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
     )
 }
 
+pub fn parse_return_statement(tokens: Vec<Token>) -> Statement {
+    let expr_tokens = Vec::from(&tokens[1..tokens.len() - 1]);
+    println!("Expr tokens: {:?}", expr_tokens);
+    let expr: BranchChild = parse_expression(expr_tokens);
+    Statement::Return(expr)
+}
+
 pub fn parse_statement(tokens: Vec<Token>) -> Statement {
     // Try to work out which kind of statement it is
     let mut iter = tokens.iter();
     let first_token = iter.next().unwrap();
     let second_token = iter.next().unwrap();
     match first_token {
+        Token::Return => parse_return_statement(tokens),
         Token::Const | Token::Let => parse_define_statement(tokens),
         Token::Ident(func_name) => {
             match second_token {

@@ -66,8 +66,8 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
         BranchChild::StrLit(val) => {
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
             stringchars.push(String::from("0")); // make sure it has a null terminator
-            let _ = out.data.write_fmt(format_args!(".strlit{}: db {}\n", out.num_strings, stringchars.join(", ")));
-            let _ = out.text.write_fmt(format_args!("mov rax, .strlit{}\n", out.num_strings));
+            let _ = out.data.write_fmt(format_args!("strlit{}: db {}\n", out.num_strings, stringchars.join(", ")));
+            let _ = out.text.write_fmt(format_args!("mov rax, strlit{}\n", out.num_strings));
             out.num_strings += 1;
         },
         _ => {
@@ -110,6 +110,14 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
     let _ = out.text.write_fmt(format_args!("mov [rsp + {}], rax\n", get_local_offset(statement.identifier, allvars)));
 }
 
+pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, func: FuncTableVal) {
+    compile_expression(out, expr); // this already puts it into rax
+    for (i, v) in allvars.iter().enumerate() {
+        let _ = out.text.write_fmt(format_args!("pop rdi\n"));
+    }
+    write_text(&mut out.text, "ret\n");
+}
+
 pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<String>) {
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("push {}\n", clobber));
@@ -142,7 +150,7 @@ pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement) {
 pub fn compile(functab: HashMap<String, FuncTableVal>) {
     let mut out = CompiledAsm { text: String::new(), data: String::new(), num_strings: 0 };
     for (key, val) in functab.into_iter() {
-        let _ = out.text.write_fmt(format_args!("{}:\n", key));
+        let _ = out.text.write_fmt(format_args!("\n{}:\n", key));
         let mut all_vars = Vec::new();
         for (i, arg) in val.signature.args.iter().enumerate() {
             assert!(i < 6, "Function calls with more than 6 args are not yet allowed.");
@@ -163,17 +171,19 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
                 Statement::Define(v) => { compile_define(&mut out, v, all_vars.clone()) },
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, v) },
+                Statement::Return(v) => { compile_return(&mut out, v, all_vars.clone(), val.clone() ) },
                 _ => { assert!(false, "Cannot compile this statement") }
             }
         };
-        for (i, arg) in val.signature.args.iter().enumerate() {
-            let _ = out.text.write_fmt(format_args!("pop {}\n", REGS[i]));
+        for (i, v) in all_vars.iter().enumerate() {
+            let _ = out.text.write_fmt(format_args!("pop rdi\n"));
         }
+        write_text(&mut out.text, "mov rax, 0\nret\n");
     }
     
     let mut file = File::create("out.asm").expect("Couldn't open file");
     let _ = file.write_all(format!("[BITS 64]\nglobal _start").as_bytes());
-    let _ = file.write_all(format!("\nsection .text\n\n{}\n\n", out.text).as_bytes());
+    let _ = file.write_all(format!("\nsection .text\n{}\n", out.text).as_bytes());
     let _ = file.write_all(format!("section .data\n\n{}\n", out.data).as_bytes());
 }
 

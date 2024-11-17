@@ -1,7 +1,11 @@
-func _start() {
+func main() {
     let msg: u64 = "hello world!\n";
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
-    // exit syscall to return 0
-    asm("mov rax, 60\nmov rdi, 0\nsyscall" : : :);
+    return 42;
+}
+
+func _start() {
+    let status: u64 = main();
+    asm("mov rax, 60\nsyscall" : "rdi" | status : :);
 }

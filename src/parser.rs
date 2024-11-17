@@ -8,20 +8,20 @@ use std::collections::HashMap;
 use crate::statements::*;
 use crate::lexer::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FuncArg {
     pub arg_type: Token,
     pub val: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FuncSig {
     pub ret_type: Token,
     pub identifier: String,
     pub args: Vec<FuncArg>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FuncTableVal {
     pub signature: FuncSig,
     pub statements: Vec<Statement>,
@@ -60,7 +60,7 @@ pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
         let next = decl_iter.next().unwrap().clone();
         assert!(next == Token::Lparen, "Expected token after function identifier to be `(`, got something else instead.");
         let mut num_open_lparens = 1;
-        let mut offset = 4;
+        let mut offset = i + 4;
         while let Some(this_token) = decl_iter.next() {
             offset += 1;
             if *this_token == Token::Comma { continue }
@@ -96,7 +96,7 @@ pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
         };
         assert!(to_check == Token::Lbrace, "Expected left brace (`{{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
-        let mut i = 0;
+        let mut n = 0;
         while let Some(this_token) = decl_iter.next() {
             if *this_token == Token::Lbrace { num_open_lbraces += 1; continue }
             if *this_token == Token::Rbrace {
@@ -104,9 +104,9 @@ pub fn parse(tokens: Vec<Token>) -> HashMap<String, FuncTableVal> {
                 if num_open_lbraces == 0 { break }
                 continue;
             }
-            i += 1;
+            n += 1;
         }
-        let statement_tokens = &tokens[offset..offset + i];
+        let statement_tokens = &tokens[offset..offset + n];
         skip = offset + 1;
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| *e == Token::Endln)
