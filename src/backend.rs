@@ -36,6 +36,19 @@ fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
     }
 }
 
+fn get_var_loc_sub(v: String, locals: Vec<String>, globals: Vec<GlobalVar>, to_sub: usize, is_rdi: bool) -> String {
+    let local_pos = locals.iter().position(|s| *s == v);
+    match local_pos {
+        Some(val) => format!("{} + {} - {}", if is_rdi { "rdi" } else { "rsp" }, val * 8, to_sub),
+        None => {
+            let global_pos = globals.iter().position(|s| s.identifier == v);
+            match global_pos {
+                Some(val) => v,
+                None => { assert!(false, "Variable not defined in current scope."); String::from("0") }
+            }
+        }
+    }
+}
 fn get_var_loc(v: String, locals: Vec<String>, globals: Vec<GlobalVar>, is_rdi: bool) -> String {
     let local_pos = locals.iter().position(|s| *s == v);
     match local_pos {
@@ -142,11 +155,11 @@ pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, 
         let _ = out.text.write_fmt(format_args!("push {}\n", clobber));
     }
     for input in statement.inputs {
-        let _ = out.text.write_fmt(format_args!("mov {}, [{} - {}]\n", input.register,  get_var_loc(input.identifier, allvars.clone(), globals.clone(), false), 8 * statement.clobbers.len()));
+        let _ = out.text.write_fmt(format_args!("mov {}, [{}]\n", input.register,  get_var_loc_sub(input.identifier, allvars.clone(), globals.clone(), 8 * statement.clobbers.len(), false)));
     }
     let _ = out.text.write_fmt(format_args!("{}\n", statement.asm));
     for output in statement.outputs {
-        let _ = out.text.write_fmt(format_args!("mov [{} - {}], {}\n", get_var_loc(output.identifier, allvars.clone(), globals.clone(), false), 8 * statement.clobbers.len(), output.register));
+        let _ = out.text.write_fmt(format_args!("mov [{}], {}\n", get_var_loc_sub(output.identifier, allvars.clone(), globals.clone(), 8 & statement.clobbers.len(), false), output.register));
     }
     for clobber in &statement.clobbers {
         let _ = out.text.write_fmt(format_args!("pop {}\n", clobber));
