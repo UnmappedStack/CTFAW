@@ -15,6 +15,7 @@ const REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 pub struct CompiledAsm {
     text: String,
     data: String,
+    rodata: String,
     num_strings: u64,
 }
 
@@ -58,7 +59,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
         },
         BranchChild::Int(val) => {
             // just return the value
-            let _ = out.text.write_fmt(format_args!("mov rax, {} ;; -- Move immediate --\n", val));
+            let _ = out.text.write_fmt(format_args!("mov rax, {}\n", val));
         },
         BranchChild::Fn(val) => {
             compile_func_call(out, val);
@@ -66,7 +67,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
         BranchChild::StrLit(val) => {
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
             stringchars.push(String::from("0")); // make sure it has a null terminator
-            let _ = out.data.write_fmt(format_args!("strlit{}: db {}\n", out.num_strings, stringchars.join(", ")));
+            let _ = out.rodata.write_fmt(format_args!("strlit{}: db {}\n", out.num_strings, stringchars.join(", ")));
             let _ = out.text.write_fmt(format_args!("mov rax, strlit{}\n", out.num_strings));
             out.num_strings += 1;
         },
@@ -148,7 +149,7 @@ pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement) {
 }
 
 pub fn compile(functab: HashMap<String, FuncTableVal>) {
-    let mut out = CompiledAsm { text: String::new(), data: String::new(), num_strings: 0 };
+    let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), num_strings: 0 };
     for (key, val) in functab.into_iter() {
         let _ = out.text.write_fmt(format_args!("\n{}:\n", key));
         let mut all_vars = Vec::new();
@@ -185,6 +186,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>) {
     let _ = file.write_all(format!("[BITS 64]\nglobal _start").as_bytes());
     let _ = file.write_all(format!("\nsection .text\n{}\n", out.text).as_bytes());
     let _ = file.write_all(format!("section .data\n\n{}\n", out.data).as_bytes());
+    let _ = file.write_all(format!("section .rodata\n\n{}\n", out.rodata).as_bytes());
 }
 
 
