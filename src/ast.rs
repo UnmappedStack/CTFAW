@@ -12,6 +12,7 @@ pub enum BranchChild {
     Int(u64),
     Float(f64),
     Ident(String),
+    StrLit(String),
     Fn(FuncCallStatement),
 }
 
@@ -113,6 +114,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             Token::Float(val) => return Box::new(BranchChild::Float(*val)),
             Token::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
             Token::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
+            Token::Str(val) => return Box::new(BranchChild::StrLit(val.clone())),
             _ => {
                 assert!(false, "One symbol left in expression, not a number or identifier.");
                 return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy

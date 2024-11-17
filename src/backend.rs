@@ -15,6 +15,7 @@ const REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 pub struct CompiledAsm {
     text: String,
     data: String,
+    num_strings: u64,
 }
 
 fn write_text(txt: &mut String, new: &str) {
@@ -62,8 +63,15 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild) {
         BranchChild::Fn(val) => {
             compile_func_call(out, val);
         },
+        BranchChild::StrLit(val) => {
+            let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
+            stringchars.push(String::from("0")); // make sure it has a null terminator
+            let _ = out.data.write_fmt(format_args!(".strlit{}: db {}\n", out.num_strings, stringchars.join(", ")));
+            let _ = out.text.write_fmt(format_args!("mov rax, .strlit{}\n", out.num_strings));
+            out.num_strings += 1;
+        },
         _ => {
-            assert!(false, "Not implemented yet, expressions can't yet handle identifiers, function calls, or floating point values.");
+            assert!(false, "Not implemented yet, expressions can't yet handle floating point values.");
         }
     }
 }
@@ -132,7 +140,7 @@ pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement) {
 }
 
 pub fn compile(functab: HashMap<String, FuncTableVal>) {
-    let mut out = CompiledAsm { text: String::new(), data: String::new() };
+    let mut out = CompiledAsm { text: String::new(), data: String::new(), num_strings: 0 };
     for (key, val) in functab.into_iter() {
         let _ = out.text.write_fmt(format_args!("{}:\n", key));
         let mut all_vars = Vec::new();

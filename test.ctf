@@ -1,5 +1,7 @@
 func _start() {
-    let var: u64 = 4 + 8;
-    // exit syscall to return the contents of var
-    asm("mov rax, 60\nsyscall" : "rdi" | var : :);
+    let msg: u64 = "hello world!\n";
+    // write the text to stdout
+    asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
+    // exit syscall to return 0
+    asm("mov rax, 60\nmov rdi, 0\nsyscall" : : :);
 }
