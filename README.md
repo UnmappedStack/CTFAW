@@ -32,6 +32,11 @@ This will build an assembly file (stored in `./out.asm`), then call LD and NASM 
 - [X] String literal support
 - [X] Return statement support
 - [ ] Semantic analysis
+- [ ] More to come...
+
+**Middle end**
+- [ ] Constant folding
+- [ ] More to come...
 
 **Backend**
  - [X] Expression compilation (AST -> Assembly)
