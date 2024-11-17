@@ -49,8 +49,6 @@ This will build an assembly file (stored in `./out.asm`), then call LD and NASM 
  - [X] Return statements
  - [ ] More to come...
 
-You may notice that this is missing middle end. I am currently skipping it, although I may come back to it.
-
 ## License & Contributing
 
 This project is under the Mozilla Public License 2.0. See the details in the `LICENSE` file.
