@@ -14,21 +14,21 @@ mod error;
 
 fn main() {
     let input: &str = &fs::read_to_string(env::args().collect::<Vec<_>>()[1].clone()).expect("Couldn't read input file.");
-    println!("Compiling...");
+    println!("[ SELF ] Compiling...");
     let tokens = lexer::lex(input);
     let ir = parser::parse(tokens);
     backend::compile(ir);
-    println!("Assembling...");
+    println!("[ NASM ] Assembling...");
     Command::new("nasm")
         .args(["-f", "elf64", "out.asm"])
         .status()
         .expect("Failed to run assembler");
-    println!("Linking...");
+    println!("[  LD  ] Linking...");
     Command::new("ld")
         .args(["-o", "out", "out.o"])
         .status()
         .expect("Failed to run linker");
-    println!("Built successfully, trying to run compiled program...");
+    println!("[ SELF ] Built successfully, trying to run compiled program...");
     let output = Command::new("sh")
         .args(["-c", "./out ; echo Exited with status $?"])
         .output()

@@ -225,7 +225,6 @@ pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
 
 pub fn parse_return_statement(tokens: Vec<Token>) -> Statement {
     let expr_tokens = Vec::from(&tokens[1..tokens.len() - 1]);
-    println!("Expr tokens: {:?}", expr_tokens);
     let expr: BranchChild = parse_expression(expr_tokens);
     Statement::Return(expr)
 }
