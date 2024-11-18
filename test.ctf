@@ -5,7 +5,8 @@ func main() {
     let num: u64 = 5;
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
-    return 42 + globalthing;
+    let global_loc: u64 = &globalthing;
+    return *global_loc + 42;
 }
 
 func _start() {

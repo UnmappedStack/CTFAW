@@ -14,6 +14,8 @@ pub enum BranchChild {
     Float(f64),
     Ident(String),
     StrLit(String),
+    Ref(String),
+    Deref(String),
     Fn(FuncCallStatement),
 }
 
@@ -96,6 +98,11 @@ fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation,
     let tokens_len = tokens.len();
     for idx in 0..tokens_len {
         if let Token::Ops(op) = tokens[idx] {
+            let next = tokens[idx + 1].clone();
+            if let Token::Ident(v) = next {
+                if (idx == 0 || !is_val(tokens[idx - 1].clone())) &&
+                    (tokens[idx] == Token::Ampersand || tokens[idx] == Token::Ops(Operation::Star)) { continue };
+            }
             let priority = priorities[&op];
             if (priority >= max_priority) && !(has_brackets && (idx > first_bracket.unwrap() && idx < last_bracket.unwrap())) {
                 max_priority = priority;
@@ -108,6 +115,17 @@ fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation,
 
 fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
     let mut tokens_len = tokens.len();
+    if tokens_len == 2 {
+        let ident = if let Token::Ident(v) = &tokens[1] { v.clone() } else { assert!(false, "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
+        match tokens[0] {
+            Token::Ampersand => return Box::new(BranchChild::Ref(ident)),
+            Token::Ops(Operation::Star) => return Box::new(BranchChild::Deref(ident)),
+            _ => {
+                assert!(false, "Unknown unary operation in expression.");
+                return Box::new(BranchChild::Int(0));
+            },
+        }
+    }
     if tokens_len == 1 {
         // It's a number so return a child with just a number
         match &tokens[0] {

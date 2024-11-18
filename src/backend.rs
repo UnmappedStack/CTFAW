@@ -100,6 +100,12 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
             // just return the value
             let _ = out.text.write_fmt(format_args!("mov rax, {}\n", val));
         },
+        BranchChild::Deref(val) => {
+            let _ = out.text.write_fmt(format_args!("mov rax, [{}]\nmov rax, [rax]\n", get_var_loc(val, allvars, globals, true)));
+        },
+        BranchChild::Ref(val) => {
+            let _ = out.text.write_fmt(format_args!("mov rax, {}\n", get_var_loc(val, allvars, globals, true)));
+        },
         BranchChild::Ident(val) => {
             let _ = out.text.write_fmt(format_args!("mov rax, [{}]\n", get_var_loc(val, allvars, globals, true)));
         },

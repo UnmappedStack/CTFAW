@@ -32,8 +32,8 @@ This will build an assembly file (stored in `./out.asm`), then call LD and NASM 
 - [X] Inline assembly
 - [X] Function calls
 - [X] Local functions & scope
-- [ ] Referencing
-- [ ] Dereferencing
+- [X] Referencing
+- [X] Dereferencing
 - [ ] Type checking
 - [ ] Externs & libc compatibility
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)

@@ -34,6 +34,17 @@ pub enum Token {
     Ampersand, Comma, Colon, Lbrace, Rbrace, Endln, Assign
 }
 
+pub fn is_val(tok: Token) -> bool {
+    match tok {
+        Token::Ident(_) => true,
+        Token::Int(_) => true,
+        Token::Float(_) => true,
+        Token::Bool(_) => true,
+        Token::Str(_) => true,
+        _ => false,
+    }
+}
+
 fn is_num_digit(ch: char) -> bool {
     (ch >= '0' && ch <= '9') || ch == '.'
 }
