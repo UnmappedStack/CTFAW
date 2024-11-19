@@ -19,6 +19,16 @@ $ cargo run <input file>
 ```
 This will build an assembly file (stored in `./out.asm`), then call LD and NASM to build a final executable (`./out`). It is run automatically.
 
+You can also use the following options:
+
+**-r** will automatically run the program after compilation is done. This cannot be used if `-S` or `-c` are used.
+
+**-c** will output only an object file, rather than the final executable, which can be linked with other object files manually.
+
+**-S** will output only the assembly file that it generates rather than the final executable.
+
+**-o <filename>** will tell the compiler to name the output file `<filename>`. 
+
 ## Roadmap
 
 - [X] Lexer (tokenisation)
