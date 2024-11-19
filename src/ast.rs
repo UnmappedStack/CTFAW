@@ -70,28 +70,29 @@ pub fn print_ast(root: &BranchChild) {
     }
 }
 
+fn token_in_brackets(idx: u64, tokens: &[Token]) -> bool {
+    let mut depth = 0;
+    let mut i: u64 = 0;
+    while i < tokens.len() as u64 {
+        if idx == i {
+            return depth != 0
+        }
+        match &tokens[i as usize] {
+            Token::Lparen => { depth += 1; },
+            Token::Rparen => { depth -= 1; },
+            _ => {},
+        }
+        i += 1;
+    }
+    assert!(false, "idx > tokens.len() in token_in_brackets().");
+    false // it *shouldn't* ever get here, but technically it's possible
+}
+
 /* Finds the index of the token with the highest priority.
  * If there are multiple of the same priority, it should pick the last.
  * It should always select a token *outside* of brackets, if there are any. 
  */
-fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation, u8>) -> usize {
-    // find the indexes of the last and first parentheses & make sure they're matched
-    let first_bracket = tokens.iter().position(|x| *x == Token::Lparen);
-    let last_bracket = tokens.iter().rposition(|x| *x == Token::Rparen);
-    let mut has_brackets = false;
-    match first_bracket {
-        Some(idx) => {
-            has_brackets = true;
-            if last_bracket == None {
-                assert!(false, "Opening bracket ( is not matched.");
-            }
-        },
-        _ => {
-            if last_bracket != None {
-                assert!(false, "Closing bracket ) is not matched.");
-            }
-        }
-    }
+fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Operation, u8>) -> usize {
     // find the actual token
     let mut highest_priority_idx = 0;
     let mut max_priority = 0;
@@ -103,18 +104,23 @@ fn find_highest_priority_token(tokens: &[Token], priorities: &HashMap<Operation,
                 if (idx == 0 || !is_val(tokens[idx - 1].clone())) &&
                     (tokens[idx] == Token::Ampersand || tokens[idx] == Token::Ops(Operation::Star)) { continue };
             }
+            if token_in_brackets(idx as u64, tokens) { continue };
             let priority = priorities[&op];
-            if (priority >= max_priority) && !(has_brackets && (idx > first_bracket.unwrap() && idx < last_bracket.unwrap())) {
+            if priority >= max_priority {
                 max_priority = priority;
                 highest_priority_idx = idx;
             }
         }
     }
+    if max_priority == 0 {
+        *tokens = &tokens[1..tokens.len() - 1];
+        return find_highest_priority_token(tokens, priorities)
+    }
     return highest_priority_idx
 }
 
 fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
-    let mut tokens_len = tokens.len();
+    let tokens_len = tokens.len();
     if tokens_len == 2 {
         let ident = if let Token::Ident(v) = &tokens[1] { v.clone() } else { assert!(false, "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
         match tokens[0] {
@@ -140,10 +146,6 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             },
         }
     }
-    if tokens[0] == Token::Lparen && tokens[tokens_len - 1] == Token::Rparen {
-        tokens = &tokens[1..tokens_len - 1];
-        tokens_len -= 2;
-    }
     if let Token::Ident(val) = &tokens[0] {
         if (tokens[1] == Token::Lparen) && (tokens[tokens_len - 1] == Token::Rparen) {
             // All that's left is a function call statement. Parse it.
@@ -163,7 +165,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             )
         }
     } 
-    let max_priority_idx = find_highest_priority_token(tokens, priorities_map);
+    let max_priority_idx = find_highest_priority_token(&mut tokens, priorities_map);
     let left_branch = parse_branch(&tokens[..max_priority_idx], priorities_map);
     let right_branch = parse_branch(&tokens[max_priority_idx + 1..], priorities_map);
     Box::new(BranchChild::Branch(
