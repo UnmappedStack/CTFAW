@@ -12,9 +12,20 @@ mod optimisation;
 mod backend;
 mod error;
 
-fn main() {
-    let input: &str = &fs::read_to_string(env::args().collect::<Vec<_>>()[1].clone()).expect("Couldn't read input file.");
+fn help(arg0: &str) {
+    println!("CTFAW Compiler, licensed under the Mozilla Public License 2.0 by Jake Steinburger (UnmappedStack).\n");
+    println!("Usage:");
+    println!("{} <input file path>\n", arg0);
+    println!("Error: No input files to compile.");
+}
 
+fn main() {
+    let args = env::args().collect::<Vec<_>>();
+    if args.len() == 1 {
+        help(&args[0]);
+        return
+    }
+    let input: &str = &fs::read_to_string(args[1].clone()).expect("Couldn't read input file.");
     println!("[ SELF ] Compiling...");
     let tokens = lexer::lex(input);
     let mut global_vars = Vec::new();
