@@ -17,7 +17,7 @@ Don't use it. It's still very much a WIP.
 ```shell
 $ cargo run <input file>
 ```
-This will build an assembly file (stored in `./out.asm`), then call LD and NASM to build a final executable (`./out`). It is run automatically.
+This will by default build an executable, statically linked program with the filename `./out`.
 
 You can also use the following options:
 
