@@ -18,6 +18,7 @@ pub struct DefineStatement {
 
 #[derive(Debug, Clone)]
 pub struct AssignStatement {
+    pub deref: bool,
     pub identifier: String,
     pub expr: BranchChild,
 }
@@ -84,7 +85,10 @@ pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
     )
 }
 
-fn parse_assign_statement(tokens: Vec<Token>) -> Statement {
+fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
+    if tokens[0] == Token::Ops(Operation::Star) {
+        tokens = (&tokens[1..]).to_vec();
+    }
     assert!(tokens[1] == Token::Assign, "Couldn't parse statement, expected = but it wasn't there.");
     let expr = parse_expression(tokens[2..tokens.len() - 1].to_vec());
     let identifier = if let Token::Ident(val) = tokens[0].clone() {
@@ -95,6 +99,7 @@ fn parse_assign_statement(tokens: Vec<Token>) -> Statement {
     }; 
     Statement::Assign(
         AssignStatement {
+            deref,
             identifier,
             expr,
         }
@@ -237,9 +242,17 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
     match first_token {
         Token::Return => parse_return_statement(tokens),
         Token::Const | Token::Let => parse_define_statement(tokens),
+        Token::Ops(v) => {
+            if *v == Operation::Star {
+                parse_assign_statement(tokens, true)
+            } else {
+                assert!(false, "Operation at the start of statement is not allowed.");
+                Statement::NullStatement
+            }
+        }
         Token::Ident(func_name) => {
             match second_token {
-                Token::Assign => parse_assign_statement(tokens),
+                Token::Assign => parse_assign_statement(tokens, false),
                 Token::Lparen => {
                     if func_name == "asm" {
                         parse_inline_asm_statement(tokens)

@@ -49,10 +49,17 @@ fn get_var_loc_sub(v: String, locals: Vec<String>, globals: Vec<GlobalVar>, to_s
         }
     }
 }
-fn get_var_loc(v: String, locals: Vec<String>, globals: Vec<GlobalVar>, is_rdi: bool) -> String {
+fn get_var_loc(out: &mut CompiledAsm, v: String, locals: Vec<String>, globals: Vec<GlobalVar>, is_rdi: bool) -> String {
     let local_pos = locals.iter().position(|s| *s == v);
     match local_pos {
-        Some(val) => format!("{} + {}", if is_rdi { "rdi" } else { "rsp" }, val * 8),
+        Some(val) => {
+            let reg_off =  if is_rdi { "rdi" } else { "rsp" };
+            if !is_rdi {
+                write_text(&mut out.text, "mov rdi, rsp");
+            }
+            let _ = out.text.write_fmt(format_args!("add rdi, {}\n", val * 8));
+            format!("rdi")
+        },
         None => {
             let global_pos = globals.iter().position(|s| s.identifier == v);
             match global_pos {
@@ -101,13 +108,16 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
             let _ = out.text.write_fmt(format_args!("mov rax, {}\n", val));
         },
         BranchChild::Deref(val) => {
-            let _ = out.text.write_fmt(format_args!("mov rax, [{}]\nmov rax, [rax]\n", get_var_loc(val, allvars, globals, true)));
+            let loc = get_var_loc(out, val, allvars, globals, true);
+            let _ = out.text.write_fmt(format_args!("mov rax, [{}]\nmov rax, [rax]\n", loc));
         },
         BranchChild::Ref(val) => {
-            let _ = out.text.write_fmt(format_args!("mov rax, {}\n", get_var_loc(val, allvars, globals, true)));
+            let loc = get_var_loc(out, val, allvars, globals, true);
+            let _ = out.text.write_fmt(format_args!("mov rax, {}\n", loc));
         },
         BranchChild::Ident(val) => {
-            let _ = out.text.write_fmt(format_args!("mov rax, [{}]\n", get_var_loc(val, allvars, globals, true)));
+            let loc = get_var_loc(out, val, allvars, globals, true);
+            let _ = out.text.write_fmt(format_args!("mov rax, [{}]\n", loc));
         },
         BranchChild::Fn(val) => {
             compile_func_call(out, val, allvars, globals);
@@ -139,13 +149,23 @@ pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<
 pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
     //let _ = out.data.write_fmt(format_args!("{}: dq 0", statement.identifier));
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
-    let _ = out.text.write_fmt(format_args!("mov [{}], rax\n", get_var_loc(statement.identifier, allvars, globals, false)));
+    let loc = get_var_loc(out, statement.identifier, allvars, globals, false);
+    let _ = out.text.write_fmt(format_args!("mov [{}], rax\n", loc));
 
 }
 
 pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
-    let _ = out.text.write_fmt(format_args!("mov [{}], rax\n", get_var_loc(statement.identifier, allvars, globals, false)));
+    if statement.deref {
+        write_text(&mut out.text, "mov rdi, rsp\npush rbx ; here");
+        let loc = get_var_loc(out, statement.identifier, allvars, globals, true);
+        let _ = out.text.write_fmt(format_args!("mov rbx, [{}]\n", loc));
+        let _ = out.text.write_fmt(format_args!("mov [rbx], rax\n"));
+        write_text(&mut out.text, "pop rbx ; to here");
+        return
+    }
+    let loc = get_var_loc(out, statement.identifier, allvars, globals, false);
+    let _ = out.text.write_fmt(format_args!("mov [{}], rax\n", loc));
 }
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>, func: FuncTableVal) {
