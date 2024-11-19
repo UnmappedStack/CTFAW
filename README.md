@@ -27,7 +27,7 @@ You can also use the following options:
 
 **-S** will output only the assembly file that it generates rather than the final executable.
 
-**-o <filename>** will tell the compiler to name the output file `<filename>`. 
+**-o filename** will tell the compiler to name the output file `filename`. 
 
 ## Roadmap
 
