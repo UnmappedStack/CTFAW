@@ -60,7 +60,7 @@ pub fn report_err(component: Component, token: Token, msg: &str) {
 }
 
 pub fn assert_report(condition: bool, component: Component, token: Token, msg: &str) {
-    if condition {
+    if !condition {
         report_err(component, token, msg);
     }
 }

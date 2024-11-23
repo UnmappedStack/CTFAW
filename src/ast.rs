@@ -2,6 +2,7 @@
 
 #![allow(dead_code, unused_variables, unused_imports)]
 
+use crate::error::*;
 use std::collections::HashMap;
 use crate::optimisation;
 use crate::lexer::*;
@@ -122,12 +123,12 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
 fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
     let tokens_len = tokens.len();
     if tokens_len == 2 {
-        let ident = if let TokenVal::Ident(v) = &tokens[1].val { v.clone() } else { assert!(false, "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
+        let ident = if let TokenVal::Ident(v) = &tokens[1].val { v.clone() } else { report_err(Component::PARSER, tokens[1].clone(), "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
         match tokens[0].val {
             TokenVal::Ampersand => return Box::new(BranchChild::Ref(ident)),
             TokenVal::Ops(Operation::Star) => return Box::new(BranchChild::Deref(ident)),
             _ => {
-                assert!(false, "Unknown unary operation in expression.");
+                report_err(Component::PARSER, tokens[0].clone(), "Unknown unary operation in expression.");
                 return Box::new(BranchChild::Int(0));
             },
         }
@@ -141,7 +142,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             TokenVal::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
             TokenVal::Str(val) => return Box::new(BranchChild::StrLit(val.clone())),
             _ => {
-                assert!(false, "One symbol left in expression, not a number or identifier.");
+                report_err(Component::PARSER, tokens[0].clone(), "One symbol left in expression, not a number or identifier.");
                 return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy
             },
         }

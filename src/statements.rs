@@ -2,6 +2,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use crate::error::*;
 use crate::lexer::*;
 use crate::ast::*;
 
@@ -70,8 +71,10 @@ pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
         assert!(false, "unreachable");
         String::from("ctfaw_failure")
     };
-    assert!(
-        tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()) && tokens[4].val == TokenVal::Assign, 
+    assert_report(
+        tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()) && tokens[4].val == TokenVal::Assign,
+        Component::PARSER,
+        tokens[2].clone(),
         "Invalid syntax for definition statement."
     );
     let expr = parse_expression(tokens[5..tokens.len() - 1].to_vec());
@@ -89,7 +92,7 @@ fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
     if tokens[0].val == TokenVal::Ops(Operation::Star) {
         tokens = (&tokens[1..]).to_vec();
     }
-    assert!(tokens[1].val == TokenVal::Assign, "Couldn't parse statement, expected = but it wasn't there.");
+    assert_report(tokens[1].val == TokenVal::Assign, Component::PARSER, tokens[1].clone(), "Couldn't parse statement, expected = but it wasn't there.");
     let expr = parse_expression(tokens[2..tokens.len() - 1].to_vec());
     let identifier = if let TokenVal::Ident(val) = tokens[0].val.clone() {
         val
@@ -142,7 +145,7 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     let asm = if let TokenVal::Str(val) = tokens[2].val.clone() {
         val
     } else {
-        assert!(false, "Invalid syntax for asm(), expected assembly source body after parenthesis.");
+        report_err(Component::PARSER, tokens[2].clone(), "Invalid syntax for asm(), expected assembly source body after parenthesis.");
         String::from("ctfaw_failure")
     };
     // get inputs & outputs
@@ -166,17 +169,17 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     let mut io: Vec<Vec<AsmIOEntry>> = Vec::from([Vec::from([]), Vec::from([])]);
     for t in 0..2 {
         for i in 0..io_split[t].len() {
-            assert!(io_split[t][i][1].val == TokenVal::BitOr, "Expected | in inline assembly input/output between register name and identifier, got other value.");
+            assert_report(io_split[t][i][1].val == TokenVal::BitOr, Component::PARSER, io_split[t][i][1].clone(), "Expected | in inline assembly input/output between register name and identifier, got other value.");
             let register = if let TokenVal::Str(val) = io_split[t][i][0].val.clone() {
                 val
             } else {
-                assert!(false, "Expected register name as string literal in input/output for inline assembly, got other value.");
+                report_err(Component::PARSER, io_split[t][i][0].clone(), "Expected register name as string literal in input/output for inline assembly, got other value.");
                 String::from("ctfaw_failure")
             };
             let identifier = if let TokenVal::Ident(val) = io_split[t][i][2].val.clone() {
                 val
             } else {
-                assert!(false, "Expected identifier in input/output for inline assembly, got other value.");
+                report_err(Component::PARSER, io_split[t][i][2].clone(), "Expected identifier in input/output for inline assembly, got other value.");
                 String::from("ctfaw_failure")
             };
             io[t].push(AsmIOEntry {
@@ -196,7 +199,7 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
         let reg = if let TokenVal::Str(val) = clobber_split[i][0].val.clone() {
             val
         } else {
-            assert!(false, "String expected in clobbered register list for inline assembly, got other value.");
+            report_err(Component::PARSER, clobber_split[i][0].clone(), "String expected in clobbered register list for inline assembly, got other value.");
             String::from("ctfaw_failure")
         };
         clobbers.push(reg);
@@ -246,7 +249,7 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
             if *v == Operation::Star {
                 parse_assign_statement(tokens, true)
             } else {
-                assert!(false, "Operation at the start of statement is not allowed.");
+                report_err(Component::PARSER, first_token.clone(), "Operation at the start of statement is not allowed.");
                 Statement::NullStatement
             }
         }
@@ -261,13 +264,13 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
                     }
                 },
                 _ => {
-                    assert!(false, "Unknown statement type, could not parse. Compilation failed.");
+                    report_err(Component::PARSER, second_token.clone(), "Unknown statement type, could not parse. Compilation failed.");
                     Statement::NullStatement
                 },
             }
         },
         _ => {
-            assert!(false, "Unknown statement type, could not parse. Compilation failed.");
+            report_err(Component::PARSER, first_token.clone(), "Unknown statement type, could not parse. Compilation failed.");
             Statement::NullStatement
         },
     }

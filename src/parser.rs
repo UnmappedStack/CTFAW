@@ -4,6 +4,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use crate::error::*;
 use std::collections::HashMap;
 use crate::optimisation;
 use crate::ast::*;
@@ -54,9 +55,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             skip -= 1;
             continue;
         }
-        if *token == TokenVal::Let {
-            assert!(false, "Global variables must be constant, but one was defined with the `let` keyword.");
-        }
+        assert_report(*token != TokenVal::Let, Component::PARSER, tokens_whole[i].clone(), "Global variables must be constant, but one was defined with the `let` keyword.");
         if *token == TokenVal::Const {
             let mut n = 0;
             let mut global_iter = tokens.iter().skip(i);
@@ -66,7 +65,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             }
             let global_def_statement = if let Statement::Define(v) = parse_define_statement(Vec::from(&tokens_whole[i..i + n + 1])) {Some(v)} else { assert!(false, "unreachable"); None };
             let (can_fold, new_ast) = optimisation::fold_expr(global_def_statement.as_ref().unwrap().expr.clone());
-            assert!(can_fold, "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
+            assert_report(can_fold, Component::PARSER, tokens_whole[i + 1].clone(), "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
             let val = if let BranchChild::Int(v) = global_def_statement.clone().unwrap().expr { v } else { assert!(false, "unreachable"); 0 };
             global_vars.push(GlobalVar { identifier: global_def_statement.unwrap().identifier, val });
         }
@@ -75,14 +74,14 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         let identifier = if let TokenVal::Ident(val) = &tokens[i + 1] {
             val.clone()
         } else {
-            assert!(false, "Expected function identifier after `func` declaration, got something else. Failed to compile.");
+            report_err(Component::PARSER, tokens_whole[i + 1].clone(), "Expected function identifier after `func` declaration, got something else. Failed to compile.");
             String::from("ctfaw_failure")
         };
         // Get the args
         let mut args = Vec::new();
         let mut decl_iter = tokens.iter().skip(i + 2);
         let next = decl_iter.next().unwrap().clone();
-        assert!(next == TokenVal::Lparen, "Expected token after function identifier to be `(`, got something else instead.");
+        assert_report(next == TokenVal::Lparen, Component::PARSER, tokens_whole[i + 3].clone(), "Expected token after function identifier to be `(`, got something else instead.");
         let mut num_open_lparens = 1;
         let mut offset = i + 4;
         while let Some(this_token) = decl_iter.next() {
@@ -97,11 +96,11 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             let identifier = if let TokenVal::Ident(val) = this_token {
                 val.clone()
             } else {
-                assert!(false, "Expected identifier in arg list of function declaration, got something else.");
+                report_err(Component::PARSER, tokens_whole[i + 4].clone(), "Expected identifier in arg list of function declaration, got something else.");
                 String::from("ctfaw_failure")
             };
             offset += 2;
-            assert!(*decl_iter.next().unwrap() == TokenVal::Colon, "Expected `:` after identifier in arg list of function declaration, got something else.");
+            assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[i + 5].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
             let argtype = decl_iter.next().unwrap().clone();
             args.push(FuncArg {
                 arg_type: argtype,
@@ -110,7 +109,9 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         }
         let next_tok = decl_iter.next().unwrap();
         let mut to_check = next_tok.clone();
+        let mut is_specified = false;
         let rettype = if *next_tok == TokenVal::Arrow {
+            is_specified = true;
             offset += 2;
             let result = decl_iter.next().unwrap().clone();
             to_check = decl_iter.next().unwrap().clone();
@@ -118,7 +119,8 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         } else {
             TokenVal::U32
         };
-        assert!(to_check == TokenVal::Lbrace, "Expected left brace (`{{`) after function declaration, got something else.");
+        let o = if is_specified { 9 } else { 7 };
+        assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut n = 0;
         while let Some(this_token) = decl_iter.next() {
