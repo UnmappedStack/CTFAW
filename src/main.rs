@@ -86,7 +86,7 @@ fn main() {
     }
     println!("[ NASM ] Assembling...");
     Command::new("nasm")
-        .args(["-f", "elf64", "out.asm"])
+        .args(["-f", "elf64", "out.asm", "-g"])
         .status()
         .expect("Failed to run assembler");
     let _ = fs::remove_file("out.asm");
