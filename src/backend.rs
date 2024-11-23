@@ -35,8 +35,7 @@ fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
             val * 8
         },
         None => {
-            assert!(false, "Variable not defined in current scope.");
-            0
+            panic!("Variable not defined in current scope.")
         }
     }
 }
@@ -51,7 +50,7 @@ fn get_var_loc(v: String, locals: Vec<String>, globals: Vec<GlobalVar>) -> Strin
             let global_pos = globals.iter().position(|s| s.identifier == v);
             match global_pos {
                 Some(val) => format!("[{v}]"),
-                None => { assert!(false, "Variable not defined in current scope."); String::from("0") }
+                None => { panic!("Variable not defined in current scope.") }
             }
         }
     }
@@ -74,7 +73,7 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation) {
             write_text(&mut out.text, out.spaces.clone(), "div rbx");
         },
         _ => {
-            assert!(false, "Unsupported operation.");
+            panic!("Unsupported operation.")
         }
     }
 }
@@ -118,7 +117,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
             out.num_strings += 1;
         },
         _ => {
-            assert!(false, "Not implemented yet, expressions can't yet handle floating point values.");
+            panic!("Not implemented yet, expressions can't yet handle floating point values.")
         }
     }
 }
@@ -229,7 +228,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::Return(v) => { compile_return(&mut out, v, all_vars.clone(), globals.clone(), val.clone()); has_early_ret = true; break },
-                _ => { assert!(false, "Cannot compile this statement") }
+                _ => { panic!("Cannot compile this statement") }
             }
         };
         if has_early_ret { continue }

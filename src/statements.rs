@@ -68,8 +68,7 @@ pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
     let identifier = if let TokenVal::Ident(val) = tokens[1].val.clone() {
         val
     } else {
-        assert!(false, "unreachable");
-        String::from("ctfaw_failure")
+        unreachable!();
     };
     assert_report(
         tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()) && tokens[4].val == TokenVal::Assign,
@@ -97,8 +96,7 @@ fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
     let identifier = if let TokenVal::Ident(val) = tokens[0].val.clone() {
         val
     } else {
-        assert!(false, "unreachable");
-        String::from("ctfaw_failure")
+        unreachable!();
     }; 
     Statement::Assign(
         AssignStatement {
@@ -219,8 +217,7 @@ pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
     let identifier = if let TokenVal::Ident(val) = tokens[0].val.clone() {
         val
     } else {
-        assert!(false, "unreachable");
-        String::from("ctfaw_failure")
+        unreachable!();
     };
     let args = parse_expr_list(tokens[2..tokens.len() - 2].to_vec());
     Statement::FuncCall(

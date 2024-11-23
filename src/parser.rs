@@ -63,10 +63,10 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
                 if *this_token == TokenVal::Endln { break }
                 n += 1;
             }
-            let global_def_statement = if let Statement::Define(v) = parse_define_statement(Vec::from(&tokens_whole[i..i + n + 1])) {Some(v)} else { assert!(false, "unreachable"); None };
+            let global_def_statement = if let Statement::Define(v) = parse_define_statement(Vec::from(&tokens_whole[i..i + n + 1])) {Some(v)} else { unreachable!() };
             let (can_fold, new_ast) = optimisation::fold_expr(global_def_statement.as_ref().unwrap().expr.clone());
             assert_report(can_fold, Component::PARSER, tokens_whole[i + 1].clone(), "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
-            let val = if let BranchChild::Int(v) = global_def_statement.clone().unwrap().expr { v } else { assert!(false, "unreachable"); 0 };
+            let val = if let BranchChild::Int(v) = global_def_statement.clone().unwrap().expr { v } else { unreachable!() };
             global_vars.push(GlobalVar { identifier: global_def_statement.unwrap().identifier, val });
         }
         if *token != TokenVal::Func { continue }

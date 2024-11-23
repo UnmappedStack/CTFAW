@@ -67,7 +67,7 @@ pub fn print_ast(root: &BranchChild) {
     if let BranchChild::Branch(branch) = root {
         print_ast_level(branch, 0);
     } else {
-        assert!(false, "unreachable");
+        unreachable!();
     }
 }
 
@@ -85,8 +85,7 @@ fn token_in_brackets(idx: u64, tokens: &[Token]) -> bool {
         }
         i += 1;
     }
-    assert!(false, "idx > tokens.len() in token_in_brackets().");
-    false // it *shouldn't* ever get here, but technically it's possible
+    panic!("idx > tokens.len() in token_in_brackets().");
 }
 
 /* Finds the index of the token with the highest priority.
@@ -156,8 +155,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             let fn_statement = if let Statement::FuncCall(val) = statement {
                 val
             } else {
-                assert!(false, "Unreachable");
-                FuncCallStatement { fn_ident: String::from("ctfaw_failure"), args: Vec::new() }
+                unreachable!()
             };
             return Box::new(
                 BranchChild::Fn(
@@ -175,8 +173,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             op: if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
                 max_priority_token
             } else {
-                assert!(false, "unreachable");
-                Operation::Add // just to make the compiler happy 
+                unreachable!()
             },
             right_val: right_branch,
         }
