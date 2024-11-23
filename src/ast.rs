@@ -77,9 +77,9 @@ fn token_in_brackets(idx: u64, tokens: &[Token]) -> bool {
         if idx == i {
             return depth != 0
         }
-        match &tokens[i as usize] {
-            Token::Lparen => { depth += 1; },
-            Token::Rparen => { depth -= 1; },
+        match &tokens[i as usize].val {
+            TokenVal::Lparen => { depth += 1; },
+            TokenVal::Rparen => { depth -= 1; },
             _ => {},
         }
         i += 1;
@@ -98,11 +98,11 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
     let mut max_priority = 0;
     let tokens_len = tokens.len();
     for idx in 0..tokens_len {
-        if let Token::Ops(op) = tokens[idx] {
+        if let TokenVal::Ops(op) = tokens[idx].val {
             let next = tokens[idx + 1].clone();
-            if let Token::Ident(v) = next {
-                if (idx == 0 || !is_val(tokens[idx - 1].clone())) &&
-                    (tokens[idx] == Token::Ampersand || tokens[idx] == Token::Ops(Operation::Star)) { continue };
+            if let TokenVal::Ident(v) = next.val {
+                if (idx == 0 || !is_val(tokens[idx - 1].val.clone())) &&
+                    (tokens[idx].val == TokenVal::Ampersand || tokens[idx].val == TokenVal::Ops(Operation::Star)) { continue };
             }
             if token_in_brackets(idx as u64, tokens) { continue };
             let priority = priorities[&op];
@@ -122,10 +122,10 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
 fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -> Box<BranchChild> {
     let tokens_len = tokens.len();
     if tokens_len == 2 {
-        let ident = if let Token::Ident(v) = &tokens[1] { v.clone() } else { assert!(false, "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
-        match tokens[0] {
-            Token::Ampersand => return Box::new(BranchChild::Ref(ident)),
-            Token::Ops(Operation::Star) => return Box::new(BranchChild::Deref(ident)),
+        let ident = if let TokenVal::Ident(v) = &tokens[1].val { v.clone() } else { assert!(false, "Currently unary operations can only be on identifiers."); String::from("ctfaw_failure") };
+        match tokens[0].val {
+            TokenVal::Ampersand => return Box::new(BranchChild::Ref(ident)),
+            TokenVal::Ops(Operation::Star) => return Box::new(BranchChild::Deref(ident)),
             _ => {
                 assert!(false, "Unknown unary operation in expression.");
                 return Box::new(BranchChild::Int(0));
@@ -134,23 +134,23 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     }
     if tokens_len == 1 {
         // It's a number so return a child with just a number
-        match &tokens[0] {
-            Token::Int(val) => return Box::new(BranchChild::Int(*val)),
-            Token::Float(val) => return Box::new(BranchChild::Float(*val)),
-            Token::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
-            Token::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
-            Token::Str(val) => return Box::new(BranchChild::StrLit(val.clone())),
+        match &tokens[0].val {
+            TokenVal::Int(val) => return Box::new(BranchChild::Int(*val)),
+            TokenVal::Float(val) => return Box::new(BranchChild::Float(*val)),
+            TokenVal::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
+            TokenVal::Bool(val) => return Box::new(BranchChild::Int(*val as u64)),
+            TokenVal::Str(val) => return Box::new(BranchChild::StrLit(val.clone())),
             _ => {
                 assert!(false, "One symbol left in expression, not a number or identifier.");
                 return Box::new(BranchChild::Int(0)); // this is just to make the compiler happy
             },
         }
     }
-    if let Token::Ident(val) = &tokens[0] {
-        if (tokens[1] == Token::Lparen) && (tokens[tokens_len - 1] == Token::Rparen) {
+    if let TokenVal::Ident(val) = &tokens[0].val {
+        if (tokens[1].val == TokenVal::Lparen) && (tokens[tokens_len - 1].val == TokenVal::Rparen) {
             // All that's left is a function call statement. Parse it.
             let mut tokens_vec = Vec::from(tokens);
-            tokens_vec.push(Token::Endln);
+            tokens_vec.push(Token { val: TokenVal::Endln, row: 0, col: 0, } );
             let statement = parse_func_call_statement(tokens_vec);
             let fn_statement = if let Statement::FuncCall(val) = statement {
                 val
@@ -171,7 +171,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     Box::new(BranchChild::Branch(
         ASTBranch {
             left_val: left_branch,
-            op: if let Token::Ops(max_priority_token) = tokens[max_priority_idx] {
+            op: if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
                 max_priority_token
             } else {
                 assert!(false, "unreachable");
