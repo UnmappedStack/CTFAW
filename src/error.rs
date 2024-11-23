@@ -58,3 +58,9 @@ pub fn report_err(component: Component, token: Token, msg: &str) {
     println!("Exiting due to {} error, could not build.", component);
     process::exit(0xDEAD);
 }
+
+pub fn assert_report(condition: bool, component: Component, token: Token, msg: &str) {
+    if condition {
+        report_err(component, token, msg);
+    }
+}
