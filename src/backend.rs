@@ -49,7 +49,7 @@ fn get_var_loc(v: String, locals: Vec<String>, globals: Vec<GlobalVar>) -> Strin
         None => {
             let global_pos = globals.iter().position(|s| s.identifier == v);
             match global_pos {
-                Some(val) => format!("[{v}]"),
+                Some(val) => format!("{}", globals[val].val),
                 None => { panic!("Variable not defined in current scope.") }
             }
         }
@@ -242,10 +242,6 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
     
     out.spaces.clear();
 
-    for global in globals {
-        write_text(&mut out.rodata, out.spaces.clone(), format!("{}: dq {}", global.identifier, global.val).as_str());
-    }
-    
     for strlit in 0..out.num_strings {
         write_text(&mut out.rodata, out.spaces.clone(), format!("strlit{}: db {}", strlit, out.string_literals[strlit]).as_str());
     }
