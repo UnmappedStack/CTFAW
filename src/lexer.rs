@@ -85,8 +85,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
     let mut iter = txt.chars().peekable();
     let mut tokens = Vec::new();
     let mut c = 0;
-    let mut row: usize = 0;
-    let mut col: usize = 0;
+    let mut row: usize = 1;
+    let mut col: usize = 1;
     while let Some(current_char) = iter.next() {
         let mut next: char = ' ';
         match iter.peek() {
@@ -247,8 +247,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 }
             },
             _ => {
-                println!("Found symbol: `{}`", current_char);
-                report_err(Component::LEXER, "Invalid symbol.");
+                report_err(Component::LEXER, Token::new(TokenVal::Endln, row, col), format!("Invalid symbol: \"{current_char}\"").as_str());
             },
         }
         c += 1;

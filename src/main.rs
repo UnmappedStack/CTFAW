@@ -71,6 +71,7 @@ fn main() {
         println!("Currently CTFAW only supports passing a single input file. Compilation terminated.");
         return
     }
+    env::set_var("CTFAW_SRC_FILENAME", input_files[0]);
     if !check_flags_allowed(&flags) { return }
     let input: &str = &fs::read_to_string(input_files[0]).expect("Couldn't read input file.");
     println!("[ SELF ] Compiling...");
