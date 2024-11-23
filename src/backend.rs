@@ -206,16 +206,18 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
         }
         write_text(&mut out.text, "mov rbp, rsp");
         // now actually compile the statements
+        let mut has_early_ret = false;
         for statement in val.statements.clone() {
             match statement {
                 Statement::Assign(v) => { compile_assign(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::Define(v) => { compile_define(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, v, all_vars.clone(), globals.clone()) },
-                Statement::Return(v) => { compile_return(&mut out, v, all_vars.clone(), globals.clone(), val.clone()) },
+                Statement::Return(v) => { compile_return(&mut out, v, all_vars.clone(), globals.clone(), val.clone()); has_early_ret = true; break },
                 _ => { assert!(false, "Cannot compile this statement") }
             }
         };
+        if has_early_ret { continue }
         for (i, v) in all_vars.iter().enumerate() {
             write_text(&mut out.text, format!("pop rdi").as_str());
         }
