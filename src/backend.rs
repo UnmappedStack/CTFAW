@@ -87,19 +87,19 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
         },
         BranchChild::Int(val) => {
             // just return the value
-            write_text(&mut out.text, format!("mov rax, {}\n", val).as_str());
+            write_text(&mut out.text, format!("mov rax, {}", val).as_str());
         },
         BranchChild::Deref(val) => {
             let loc = get_var_loc(val, allvars, globals);
-            write_text(&mut out.text, format!("mov rax, [{}]\nmov rax, rax\n", loc).as_str());
+            write_text(&mut out.text, format!("mov rax, [{}]\nmov rax, rax", loc).as_str());
         },
         BranchChild::Ref(val) => {
             let loc = get_var_loc(val, allvars, globals);
-            write_text(&mut out.text, format!("lea rax, {}\n", loc).as_str());
+            write_text(&mut out.text, format!("lea rax, {}", loc).as_str());
         },
         BranchChild::Ident(val) => {
             let loc = get_var_loc(val, allvars, globals);
-            write_text(&mut out.text, format!("mov rax, {}\n", loc).as_str());
+            write_text(&mut out.text, format!("mov rax, {}", loc).as_str());
         },
         BranchChild::Fn(val) => {
             compile_func_call(out, val, allvars, globals);
@@ -107,8 +107,8 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
         BranchChild::StrLit(val) => {
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
             stringchars.push(String::from("0")); // make sure it has a null terminator
-            write_text(&mut out.rodata, format!("strlit{}: db {}\n", out.num_strings, stringchars.join(", ")).as_str());
-            write_text(&mut out.text, format!("mov rax, strlit{}\n", out.num_strings).as_str());
+            write_text(&mut out.rodata, format!("strlit{}: db {}", out.num_strings, stringchars.join(", ")).as_str());
+            write_text(&mut out.text, format!("mov rax, strlit{}", out.num_strings).as_str());
             out.num_strings += 1;
         },
         _ => {
@@ -131,7 +131,7 @@ pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars
     //write_text(&mut out.data, format!("{}: dq 0", statement.identifier).as_str());
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
     let loc = get_var_loc(statement.identifier, allvars, globals);
-    write_text(&mut out.text, format!("mov {}, rax\n", loc).as_str());
+    write_text(&mut out.text, format!("mov {}, rax", loc).as_str());
 
 }
 
@@ -140,36 +140,36 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
     if statement.deref {
         write_text(&mut out.text, "push rbx");
         let loc = get_var_loc(statement.identifier, allvars, globals);
-        write_text(&mut out.text, format!("mov rbx, {}\n", loc).as_str());
-        write_text(&mut out.text, format!("mov [rbx], rax\n").as_str());
+        write_text(&mut out.text, format!("mov rbx, {}", loc).as_str());
+        write_text(&mut out.text, format!("mov [rbx], rax").as_str());
         write_text(&mut out.text, "pop rbx");
         return
     }
     let loc = get_var_loc(statement.identifier, allvars, globals);
-    write_text(&mut out.text, format!("lea {}, [rax]\n", loc).as_str());
+    write_text(&mut out.text, format!("lea {}, [rax]", loc).as_str());
 }
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>, func: FuncTableVal) {
     compile_expression(out, expr, allvars.clone(), globals.clone()); // this already puts it into rax
     for (i, v) in allvars.iter().enumerate() {
-        write_text(&mut out.text, format!("pop rdi\n").as_str());
+        write_text(&mut out.text, format!("pop rdi").as_str());
     }
     write_text(&mut out.text, "pop rbp\nret");
 }
 
 pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
     for clobber in &statement.clobbers {
-        write_text(&mut out.text, format!("push {}\n", clobber).as_str());
+        write_text(&mut out.text, format!("push {}", clobber).as_str());
     }
     for input in statement.inputs {
-        write_text(&mut out.text, format!("mov {}, {}\n", input.register,  get_var_loc(input.identifier, allvars.clone(), globals.clone())).as_str());
+        write_text(&mut out.text, format!("mov {}, {}", input.register,  get_var_loc(input.identifier, allvars.clone(), globals.clone())).as_str());
     }
-    write_text(&mut out.text, format!("{}\n", statement.asm).as_str());
+    write_text(&mut out.text, format!("{}", statement.asm).as_str());
     for output in statement.outputs {
-        write_text(&mut out.text, format!("mov {}, [{}]\n", get_var_loc(output.identifier, allvars.clone(), globals.clone()), output.register).as_str());
+        write_text(&mut out.text, format!("mov {}, [{}]", get_var_loc(output.identifier, allvars.clone(), globals.clone()), output.register).as_str());
     }
     for clobber in &statement.clobbers {
-        write_text(&mut out.text, format!("pop {}\n", clobber).as_str());
+        write_text(&mut out.text, format!("pop {}", clobber).as_str());
     }
 }
 
@@ -178,29 +178,29 @@ pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement, al
         write_text(&mut out.text, "push rax");
         compile_expression(out, statement.args[arg].clone(), allvars.clone(), globals.clone());
         if arg < 6 {
-            write_text(&mut out.text, format!("mov {}, rax\npop rax\n", REGS[arg]).as_str());
+            write_text(&mut out.text, format!("mov {}, rax\npop rax", REGS[arg]).as_str());
         } else {
-            write_text(&mut out.text, format!("mov r15, rax\npop rax\npush r15\n").as_str());
+            write_text(&mut out.text, format!("mov r15, rax\npop rax\npush r15").as_str());
         }
     }
-    write_text(&mut out.text, format!("call {}\n", statement.fn_ident).as_str());
+    write_text(&mut out.text, format!("call {}", statement.fn_ident).as_str());
 }
 
 pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) {
     let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), num_strings: 0 };
     for (key, val) in functab.into_iter() {
-        write_text(&mut out.text, format!("\n{}:\n", key).as_str());
+        write_text(&mut out.text, format!("\n{}:", key).as_str());
         let mut all_vars = Vec::new();
         for (i, arg) in val.signature.args.iter().enumerate() {
             assert!(i < 6, "Function calls with more than 6 args are not yet allowed.");
-            write_text(&mut out.text, format!("push {}\n", REGS[i]).as_str());
+            write_text(&mut out.text, format!("push {}", REGS[i]).as_str());
             all_vars.push(arg.val.clone());
         }
         write_text(&mut out.text, "push rbp\nmov rbp, rsp");
         // init local vars
         for statement in &val.statements {
             if let Statement::Define(s) = statement {
-                write_text(&mut out.text, format!("push 0 ;; {}\n", s.identifier).as_str());
+                write_text(&mut out.text, format!("push 0 ;; {}", s.identifier).as_str());
                 all_vars.push(s.identifier.clone());
             }
         }
@@ -217,20 +217,20 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
             }
         };
         for (i, v) in all_vars.iter().enumerate() {
-            write_text(&mut out.text, format!("pop rdi\n").as_str());
+            write_text(&mut out.text, format!("pop rdi").as_str());
         }
-        write_text(&mut out.text, "pop rbp\nmov rax, 0\nret\n");
+        write_text(&mut out.text, "pop rbp\nmov rax, 0\nret");
     }
     
     for global in globals {
-        write_text(&mut out.rodata, format!("{}: dq {}\n", global.identifier, global.val).as_str());
+        write_text(&mut out.rodata, format!("{}: dq {}", global.identifier, global.val).as_str());
     }
 
     let mut file = File::create("out.asm").expect("Couldn't open file");
     let _ = file.write_all(format!("[BITS 64]\nglobal _start").as_bytes());
     let _ = file.write_all(format!("\nsection .text\n{}\n", out.text).as_bytes());
-    let _ = file.write_all(format!("section .data\n\n{}\n", out.data).as_bytes());
-    let _ = file.write_all(format!("section .rodata\n\n{}\n", out.rodata).as_bytes());
+    let _ = file.write_all(format!("section .data\n\n{}", out.data).as_bytes());
+    let _ = file.write_all(format!("section .rodata\n\n{}", out.rodata).as_bytes());
 }
 
 

@@ -89,7 +89,7 @@ fn main() {
         .args(["-f", "elf64", "out.asm", "-g"])
         .status()
         .expect("Failed to run assembler");
-    let _ = fs::remove_file("out.asm");
+    //let _ = fs::remove_file("out.asm");
     if flags.just_obj {
         if flags.outfile_set { let _ = fs::rename("out.o", flags.out_file); }
         return
