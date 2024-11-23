@@ -20,7 +20,6 @@ pub struct FuncArg {
 #[derive(Debug, Clone)]
 pub struct FuncSig {
     pub ret_type: TokenVal,
-    pub identifier: String,
     pub args: Vec<FuncArg>,
 }
 
@@ -149,7 +148,6 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             FuncTableVal {
                 signature: FuncSig {
                     ret_type: rettype,
-                    identifier,
                     args,
                 },
                 statements,
