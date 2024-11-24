@@ -2,6 +2,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use crate::parser::*;
 use crate::error::*;
 use crate::lexer::*;
 use crate::ast::*;
@@ -55,21 +56,15 @@ pub enum Statement {
 }
 
 fn token_is_type(token: TokenVal) -> bool {
-    token == TokenVal::U8      ||
-    token == TokenVal::U16     ||
-    token == TokenVal::U32     ||
-    token == TokenVal::U64     ||
-    token == TokenVal::F64     ||
-    token == TokenVal::Boolean
+    match token {
+        TokenVal::Type(_) => true,
+        _ => false,
+    }
 }
 
 pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
     let is_const = tokens[0].val == TokenVal::Const;
-    let identifier = if let TokenVal::Ident(val) = tokens[1].val.clone() {
-        val
-    } else {
-        unreachable!();
-    };
+    let identifier = get_ident(&tokens[1]);
     assert_report(
         tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()) && tokens[4].val == TokenVal::Assign,
         Component::PARSER,
@@ -93,11 +88,7 @@ fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
     }
     assert_report(tokens[1].val == TokenVal::Assign, Component::PARSER, tokens[1].clone(), "Couldn't parse statement, expected = but it wasn't there.");
     let expr = parse_expression(tokens[2..tokens.len() - 1].to_vec());
-    let identifier = if let TokenVal::Ident(val) = tokens[0].val.clone() {
-        val
-    } else {
-        unreachable!();
-    }; 
+    let identifier = get_ident(&tokens[0]);
     Statement::Assign(
         AssignStatement {
             deref,
@@ -140,12 +131,7 @@ fn get_index(v: Vec<Token>, occurrence: usize, value: TokenVal) -> Option<usize>
  * asm source       inputs list                        outputs list     clobbered register list
  */ 
 pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
-    let asm = if let TokenVal::Str(val) = tokens[2].val.clone() {
-        val
-    } else {
-        report_err(Component::PARSER, tokens[2].clone(), "Invalid syntax for asm(), expected assembly source body after parenthesis.");
-        String::from("ctfaw_failure")
-    };
+    let asm = get_str(&tokens[2]);
     // get inputs & outputs
     let first_colon_idx  = get_index(tokens.clone(), 1, TokenVal::Colon).unwrap();
     let second_colon_idx = get_index(tokens.clone(), 2, TokenVal::Colon).unwrap();
@@ -168,18 +154,8 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     for t in 0..2 {
         for i in 0..io_split[t].len() {
             assert_report(io_split[t][i][1].val == TokenVal::BitOr, Component::PARSER, io_split[t][i][1].clone(), "Expected | in inline assembly input/output between register name and identifier, got other value.");
-            let register = if let TokenVal::Str(val) = io_split[t][i][0].val.clone() {
-                val
-            } else {
-                report_err(Component::PARSER, io_split[t][i][0].clone(), "Expected register name as string literal in input/output for inline assembly, got other value.");
-                String::from("ctfaw_failure")
-            };
-            let identifier = if let TokenVal::Ident(val) = io_split[t][i][2].val.clone() {
-                val
-            } else {
-                report_err(Component::PARSER, io_split[t][i][2].clone(), "Expected identifier in input/output for inline assembly, got other value.");
-                String::from("ctfaw_failure")
-            };
+            let register = get_str(&io_split[t][i][0]);
+            let identifier = get_ident(&io_split[t][i][2]);
             io[t].push(AsmIOEntry {
                 register,
                 identifier,
@@ -194,12 +170,7 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
         .collect();
     let mut clobbers = Vec::new();
     for i in 0..clobber_split.len() {
-        let reg = if let TokenVal::Str(val) = clobber_split[i][0].val.clone() {
-            val
-        } else {
-            report_err(Component::PARSER, clobber_split[i][0].clone(), "String expected in clobbered register list for inline assembly, got other value.");
-            String::from("ctfaw_failure")
-        };
+        let reg = get_str(&clobber_split[i][0]);
         clobbers.push(reg);
     }
 
@@ -214,11 +185,7 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
 }
 
 pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
-    let identifier = if let TokenVal::Ident(val) = tokens[0].val.clone() {
-        val
-    } else {
-        unreachable!();
-    };
+    let identifier = get_ident(&tokens[0]);
     let args = parse_expr_list(tokens[2..tokens.len() - 2].to_vec());
     Statement::FuncCall(
         FuncCallStatement {
@@ -239,6 +206,7 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
     let mut iter = tokens.iter();
     let first_token = iter.next().unwrap();
     let second_token = iter.next().unwrap();
+    let mut func_name_maybe = None;
     match &first_token.val {
         TokenVal::Return => parse_return_statement(tokens),
         TokenVal::Const | TokenVal::Let => parse_define_statement(tokens),
@@ -250,7 +218,15 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
                 Statement::NullStatement
             }
         }
-        TokenVal::Ident(func_name) => {
+        TokenVal::Literal(v) if {
+            if let LitVal::Ident(s) = v.val.clone() {
+                func_name_maybe = Some(s);
+                true
+            } else {
+                false
+            }
+        } => {
+            let func_name = func_name_maybe.unwrap();
             match &second_token.val {
                 TokenVal::Assign => parse_assign_statement(tokens, false),
                 TokenVal::Lparen => {

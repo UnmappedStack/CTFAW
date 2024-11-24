@@ -19,7 +19,7 @@ pub struct FuncArg {
 
 #[derive(Debug, Clone)]
 pub struct FuncSig {
-    pub ret_type: TokenVal,
+    pub ret_type: Type,
     pub args: Vec<FuncArg>,
 }
 
@@ -33,6 +33,36 @@ pub struct FuncTableVal {
 pub struct GlobalVar {
     pub identifier: String,
     pub val: u64,
+}
+
+pub fn get_ident(tok: &Token) -> String {
+    let tok_val = tok.val.clone();
+    if let TokenVal::Literal(v) = tok_val {
+        if let LitVal::Ident(val) = v.val.clone() {
+            val
+        } else {
+            report_err(Component::PARSER, tok.clone(), "Expected function identifier, got something else. Failed to compile.");
+            String::from("ctfaw_failure")
+        }
+    } else {
+        report_err(Component::PARSER, tok.clone(), "Expected function identifier, got something else. Failed to compile.");
+        String::from("ctfaw_failure")
+    }
+}
+
+pub fn get_str(tok: &Token) -> String {
+    let tok_val = tok.val.clone();
+    if let TokenVal::Literal(v) = tok_val {
+        if let LitVal::Str(val) = v.val.clone() {
+            val
+        } else {
+            report_err(Component::PARSER, tok.clone(), "Expected string literal, got something else.");
+            String::from("ctfaw_failure")
+        }
+    } else {
+        report_err(Component::PARSER, tok.clone(), "Expected string literal, got something else.");
+        String::from("ctfaw_failure")
+    }
 }
 
 /* Function declaration syntax:
@@ -70,12 +100,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         }
         if *token != TokenVal::Func { continue }
         // it's a function declaration indeed. Get the identifier.
-        let identifier = if let TokenVal::Ident(val) = &tokens[i + 1] {
-            val.clone()
-        } else {
-            report_err(Component::PARSER, tokens_whole[i + 1].clone(), "Expected function identifier after `func` declaration, got something else. Failed to compile.");
-            String::from("ctfaw_failure")
-        };
+        let identifier = get_ident(&tokens_whole[i + 1]);
         // Get the args
         let mut args = Vec::new();
         let mut decl_iter = tokens.iter().skip(i + 2);
@@ -92,12 +117,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
                 if num_open_lparens == 0 { break }
                 continue;
             }
-            let identifier = if let TokenVal::Ident(val) = this_token {
-                val.clone()
-            } else {
-                report_err(Component::PARSER, tokens_whole[i + 4].clone(), "Expected identifier in arg list of function declaration, got something else.");
-                String::from("ctfaw_failure")
-            };
+            let identifier = get_ident(&tokens_whole[i + 4]);
             offset += 2;
             assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[i + 5].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
             let argtype = decl_iter.next().unwrap().clone();
@@ -112,11 +132,16 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         let rettype = if *next_tok == TokenVal::Arrow {
             is_specified = true;
             offset += 2;
-            let result = decl_iter.next().unwrap().clone();
+            let result = if let TokenVal::Type(t) = decl_iter.next().unwrap().clone() {
+                t
+            } else {
+                report_err(Component::PARSER, tokens_whole[i + 7].clone(), "Expected type after -> in function declaration specifying return type, got something else.");
+                Type::Any
+            };
             to_check = decl_iter.next().unwrap().clone();
             result
         } else {
-            TokenVal::U32
+            Type::U32
         };
         let o = if is_specified { 9 } else { 7 };
         assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{{`) after function declaration, got something else.");
