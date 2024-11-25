@@ -80,8 +80,8 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation) {
 
 /* The result of a single AST branch is stored in RAX. */
 fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>) {
-    match branch {
-        BranchChild::Branch(val) => {
+    match branch.val {
+        BranchChildVal::Branch(val) => {
             // compile it as a branch
             compile_ast_branch(out, *val.left_val, allvars.clone(), globals.clone());
             write_text(&mut out.text, out.spaces.clone(), "push rax");
@@ -89,27 +89,27 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
             write_text(&mut out.text, out.spaces.clone(), "pop rbx");
             compile_operation(out, val.op);
         },
-        BranchChild::Int(val) => {
+        BranchChildVal::Int(val) => {
             // just return the value
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, {}", val).as_str());
         },
-        BranchChild::Deref(val) => {
+        BranchChildVal::Deref(val) => {
             let loc = get_var_loc(val, allvars, globals);
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, [{}]\nmov rax, rax", loc).as_str());
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, rax").as_str());
         },
-        BranchChild::Ref(val) => {
+        BranchChildVal::Ref(val) => {
             let loc = get_var_loc(val, allvars, globals);
             write_text(&mut out.text, out.spaces.clone(), format!("lea rax, {}", loc).as_str());
         },
-        BranchChild::Ident(val) => {
+        BranchChildVal::Ident(val) => {
             let loc = get_var_loc(val, allvars, globals);
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, {}", loc).as_str());
         },
-        BranchChild::Fn(val) => {
+        BranchChildVal::Fn(val) => {
             compile_func_call(out, val, allvars, globals);
         },
-        BranchChild::StrLit(val) => {
+        BranchChildVal::StrLit(val) => {
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
             stringchars.push(String::from("0")); // make sure it has a null terminator
             out.string_literals.push(stringchars.join(", "));
@@ -123,7 +123,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
 }
 
 pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>) {
-    if let BranchChild::Branch(_) = ast {
+    if let BranchChildVal::Branch(_) = ast.val {
         write_text(&mut out.text, out.spaces.clone(), "push rbx");
         compile_ast_branch(out, ast, allvars, globals);
         write_text(&mut out.text, out.spaces.clone(), "pop rbx");
@@ -204,7 +204,6 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
             out.spaces.push_str(" ");
         }
         out.spaces.push_str("  ");
-        write_text(&mut out.text, out.spaces.clone(), "mov rbp, rsp");
         let mut all_vars = Vec::new();
         for (i, arg) in val.signature.args.iter().enumerate() {
             assert!(i < 6, "Function calls with more than 6 args are not yet allowed.");

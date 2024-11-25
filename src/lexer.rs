@@ -117,7 +117,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
         }
         match current_char {
             ' ' | '\t' | '\r' => { c += 1; col += 1; continue },
-            '\n' => { c += 1; col = 0; row += 1; continue },
+            '\n' => { c += 1; col = 1; row += 1; continue },
             // easy ones first
             ':' => tokens.push(Token::new(TokenVal::Colon, row, col)),
             ',' => tokens.push(Token::new(TokenVal::Comma, row, col)),
@@ -189,6 +189,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
                             col += 1;
                         }
                         iter.next();
+                        col = 1;
+                        row += 1;
                     },
                     _ => tokens.push(Token::new(TokenVal::Ops(Operation::Div), row, col)),
                 }

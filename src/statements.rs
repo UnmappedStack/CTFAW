@@ -14,7 +14,8 @@ use crate::ast::*;
 pub struct DefineStatement {
     is_const: bool,
     pub identifier: String,
-    def_type: Token,
+    pub def_type: Type,
+    pub type_tok: Token,
     pub expr: BranchChild,
 }
 
@@ -22,6 +23,7 @@ pub struct DefineStatement {
 pub struct AssignStatement {
     pub deref: bool,
     pub identifier: String,
+    pub ident_tok: Token,
     pub expr: BranchChild,
 }
 
@@ -72,11 +74,19 @@ pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
         "Invalid syntax for definition statement."
     );
     let expr = parse_expression(tokens[5..tokens.len() - 1].to_vec());
+    let typ = match tokens[3].val.clone() {
+        TokenVal::Type(t) => t,
+        _ => {
+            report_err(Component::PARSER, tokens[3].clone(), "Expected type in variable declaration.");
+            unreachable!();
+        }
+    };
     Statement::Define(
         DefineStatement {
             is_const: is_const,
             identifier,
-            def_type: tokens[3].clone(),
+            def_type: typ,
+            type_tok: tokens[3].clone(),
             expr
         }
     )
@@ -93,6 +103,7 @@ fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
         AssignStatement {
             deref,
             identifier,
+            ident_tok: tokens[0].clone(),
             expr,
         }
     )

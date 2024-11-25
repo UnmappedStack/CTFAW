@@ -4,6 +4,7 @@ use std::process::Command;
 use std::fs;
 use std::env;
 
+mod typecheck;
 mod lexer;
 mod parser;
 mod statements;
@@ -78,6 +79,7 @@ fn main() {
     let tokens = lexer::lex(input);
     let mut global_vars = Vec::new();
     let ir = parser::parse(tokens, &mut global_vars);
+    typecheck::typecheck(&ir, &global_vars);
     backend::compile(ir, global_vars);
     
     if flags.just_asm {

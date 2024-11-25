@@ -32,6 +32,7 @@ pub struct FuncTableVal {
 #[derive(Debug, Clone)]
 pub struct GlobalVar {
     pub identifier: String,
+    pub typ: Type,
     pub val: u64,
 }
 
@@ -95,8 +96,8 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             let global_def_statement = if let Statement::Define(v) = parse_define_statement(Vec::from(&tokens_whole[i..i + n + 1])) {Some(v)} else { unreachable!() };
             let (can_fold, new_ast) = optimisation::fold_expr(global_def_statement.as_ref().unwrap().expr.clone());
             assert_report(can_fold, Component::PARSER, tokens_whole[i + 1].clone(), "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
-            let val = if let BranchChild::Int(v) = global_def_statement.clone().unwrap().expr { v } else { unreachable!() };
-            global_vars.push(GlobalVar { identifier: global_def_statement.unwrap().identifier, val });
+            let val = if let BranchChildVal::Int(v) = global_def_statement.clone().unwrap().expr.val { v } else { unreachable!() };
+            global_vars.push(GlobalVar { identifier: global_def_statement.clone().unwrap().identifier, typ: global_def_statement.unwrap().def_type, val });
         }
         if *token != TokenVal::Func { continue }
         // it's a function declaration indeed. Get the identifier.

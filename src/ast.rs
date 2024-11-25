@@ -10,7 +10,7 @@ use crate::lexer::*;
 use crate::statements::*;
 
 #[derive(Debug, Clone)]
-pub enum BranchChild {
+pub enum BranchChildVal {
     Branch(ASTBranch),
     Int(u64),
     Float(f64),
@@ -19,6 +19,13 @@ pub enum BranchChild {
     Ref(String),
     Deref(String),
     Fn(FuncCallStatement),
+}
+
+#[derive(Debug, Clone)]
+pub struct BranchChild {
+    pub val: BranchChildVal,
+    pub row: u64,
+    pub col: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -40,8 +47,8 @@ fn print_ast_level(branch: &ASTBranch, depth: u32) {
     println!("Branch - {:?}:", branch.op);
     print_level_spaces(depth + 1);
     let left = &branch.left_val;
-    match *((*left).clone()) {
-        BranchChild::Branch(child_branch) => {
+    match left.clone().val {
+        BranchChildVal::Branch(child_branch) => {
             print!("-> Left: ");
             print_ast_level(&child_branch, depth + 1);
         },
@@ -51,8 +58,8 @@ fn print_ast_level(branch: &ASTBranch, depth: u32) {
     }
     let right = &branch.right_val;
     print_level_spaces(depth + 1);
-    match *((*right).clone()) {
-        BranchChild::Branch(child_branch) => {
+    match right.clone().val {
+        BranchChildVal::Branch(child_branch) => {
             print!("-> Right: ");
             print_ast_level(&child_branch, depth + 1);
         },
@@ -65,8 +72,8 @@ fn print_ast_level(branch: &ASTBranch, depth: u32) {
 /* Debug function to print an entire AST */
 pub fn print_ast(root: &BranchChild) {
     print!("-> ");
-    if let BranchChild::Branch(branch) = root {
-        print_ast_level(branch, 0);
+    if let BranchChildVal::Branch(branch) = root.val.clone() {
+        print_ast_level(&branch, 0);
     } else {
         unreachable!();
     }
@@ -127,11 +134,11 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     if tokens_len == 2 {
         let ident = get_ident(&tokens[1]);
         match tokens[0].val {
-            TokenVal::Ampersand => return Box::new(BranchChild::Ref(ident)),
-            TokenVal::Ops(Operation::Star) => return Box::new(BranchChild::Deref(ident)),
+            TokenVal::Ampersand => return Box::new(BranchChild {val: BranchChildVal::Ref(ident), row: tokens[0].row, col: tokens[0].col}),
+            TokenVal::Ops(Operation::Star) => return Box::new(BranchChild {val: BranchChildVal::Deref(ident), row: tokens[0].row, col: tokens[0].col}),
             _ => {
                 report_err(Component::PARSER, tokens[0].clone(), "Unknown unary operation in expression.");
-                return Box::new(BranchChild::Int(0));
+                return Box::new(BranchChild {val: BranchChildVal::Int(0), row: tokens[0].row, col: tokens[0].col});
             },
         }
     }
@@ -141,11 +148,11 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     if tokens_len == 1 {
         // It's a number so return a child with just a number
         match lit_o.expect("Value in expression which is not a number or identifier.").val.clone() {
-            LitVal::Int(val) => return Box::new(BranchChild::Int(val)),
-            LitVal::Float(val) => return Box::new(BranchChild::Float(val)),
-            LitVal::Ident(val) => return Box::new(BranchChild::Ident(val.clone())),
-            LitVal::Bool(val) => return Box::new(BranchChild::Int(val as u64)),
-            LitVal::Str(val) => return Box::new(BranchChild::StrLit(val.clone())),
+            LitVal::Int(val) => return Box::new(BranchChild {val: BranchChildVal::Int(val), row: tokens[0].row, col: tokens[0].col}),
+            LitVal::Float(val) => return Box::new(BranchChild {val: BranchChildVal::Float(val), row: tokens[0].row, col: tokens[0].col}),
+            LitVal::Ident(val) => return Box::new(BranchChild {val: BranchChildVal::Ident(val.clone()), row: tokens[0].row, col: tokens[0].col}),
+            LitVal::Bool(val) => return Box::new(BranchChild {val: BranchChildVal::Int(val as u64), row: tokens[0].row, col: tokens[0].col}),
+            LitVal::Str(val) => return Box::new(BranchChild {val: BranchChildVal::StrLit(val.clone()), row: tokens[0].row, col: tokens[0].col}),
         }
     }
 
@@ -162,9 +169,13 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
                     unreachable!()
                 };
                 return Box::new(
-                    BranchChild::Fn(
-                        fn_statement
-                    )
+                    BranchChild {
+                        val: BranchChildVal::Fn(
+                            fn_statement
+                        ),
+                        row: tokens[0].row,
+                        col: tokens[0].col,
+                    }
                 )
             }
         },
@@ -173,17 +184,23 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     let max_priority_idx = find_highest_priority_token(&mut tokens, priorities_map);
     let left_branch = parse_branch(&tokens[..max_priority_idx], priorities_map);
     let right_branch = parse_branch(&tokens[max_priority_idx + 1..], priorities_map);
-    Box::new(BranchChild::Branch(
-        ASTBranch {
-            left_val: left_branch,
-            op: if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
-                max_priority_token
-            } else {
-                unreachable!()
-            },
-            right_val: right_branch,
+    Box::new(
+        BranchChild {
+            val: BranchChildVal::Branch(
+                ASTBranch {
+                    left_val: left_branch,
+                    op: if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
+                        max_priority_token
+                    } else {
+                        unreachable!()
+                    },
+                    right_val: right_branch,
+                }
+            ),
+            row: tokens[max_priority_idx].row,
+            col: tokens[max_priority_idx].col,
         }
-    ))
+    )
 }
 
 /* Parses an expression into an AST.

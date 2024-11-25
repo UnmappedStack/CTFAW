@@ -8,15 +8,15 @@ use crate::lexer::*;
  * of optimisation.
  */
 fn fold_branch(branch: &mut BranchChild) -> bool {
-    match branch {
-        BranchChild::Branch(val) => {
+    match branch.val.clone() {
+        BranchChildVal::Branch(mut val) => {
             if !(fold_branch(val.left_val.as_mut()) && fold_branch(val.right_val.as_mut())) { return false }
-            let left = match *val.left_val {
-                BranchChild::Int(v) => v,
+            let left = match val.left_val.val {
+                BranchChildVal::Int(v) => v,
                 _ => return false
             };
-            let right = match *val.right_val {
-                BranchChild::Int(v) => v,
+            let right = match val.right_val.val {
+                BranchChildVal::Int(v) => v,
                 _ => return false
             };
             let result = match val.op {
@@ -34,10 +34,10 @@ fn fold_branch(branch: &mut BranchChild) -> bool {
                 },
                 _ => { return false }
             };
-            *branch = BranchChild::Int(result);
+            *branch = BranchChild {val: BranchChildVal::Int(result), row: 0, col: 0};
             true
         },
-        BranchChild::Int(val) => {
+        BranchChildVal::Int(val) => {
             true
         },
         _ => {

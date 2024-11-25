@@ -15,6 +15,7 @@ const NCL: &str = "\x1B[0m";
 pub enum Component {
     LEXER,
     PARSER,
+    ANALYSIS,
     CODEGEN
 }
 
@@ -38,6 +39,7 @@ impl fmt::Display for Component {
             Component::LEXER => write!(f, "lexer"),
             Component::PARSER => write!(f, "parser"),
             Component::CODEGEN => write!(f, "codegen"),
+            Component::ANALYSIS=> write!(f, "analysis"),
         }
     }
 }
