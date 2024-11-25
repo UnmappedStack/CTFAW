@@ -44,7 +44,11 @@ You can also use the following options:
 - [X] Local functions & scope
 - [X] Referencing
 - [X] Dereferencing
-- [ ] Type checking
+- [X] Decent error handling
+- [X] Type checking
+- [ ] Use specified data sizes in generated assembly
+- [ ] Pointer types
+- [ ] Casting
 - [ ] Externs & libc compatibility
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)
 - [ ] Bitwise operations (`>>`/`<<`, `|`, `&`, `~`, etc.)
@@ -55,8 +59,6 @@ You can also use the following options:
     - [ ] Elseif
     - [ ] While
     - [ ] For
-- [ ] Decent error handling
-- [ ] Semantic analysis
 - [ ] More to come...
 
 ## License & Contributing
