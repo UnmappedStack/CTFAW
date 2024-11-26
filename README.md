@@ -46,8 +46,8 @@ You can also use the following options:
 - [X] Dereferencing
 - [X] Decent error handling
 - [X] Type checking
+- [X] Pointer types
 - [ ] Use specified data sizes in generated assembly
-- [ ] Pointer types
 - [ ] Casting
 - [ ] Externs & libc compatibility
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)
