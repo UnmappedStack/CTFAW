@@ -24,6 +24,7 @@ pub enum LitVal {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypeVal {
     Any,
+    Char,
     U8,
     U16,
     U32,
@@ -256,7 +257,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let mut string = String::from(s);
                 parse_escape_characters(&mut string);
                 // TODO: Make string literals become a char* type instead of u64
-                tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Str(string), typ: Type {val: TypeVal::U64, ptr_depth: 0}}), row, col));
+                tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Str(string), typ: Type {val: TypeVal::U8, ptr_depth: 1}}), row, col));
                 c += i + 1;
                 col += i + 1;
                 iter.next();
@@ -277,7 +278,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 col += i;
                 match s {
                     "f64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::F64, ptr_depth: 0}), row, col)),
-                    "u8" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U8, ptr_depth: 0}), row, col)),
+                    "u8" | "char" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U8, ptr_depth: 0}), row, col)),
                     "u16" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U16, ptr_depth: 0}), row, col)),
                     "u32" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U32, ptr_depth: 0}), row, col)),
                     "u64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U64, ptr_depth: 0}), row, col)),

@@ -68,19 +68,25 @@ pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {
     let is_const = tokens[0].val == TokenVal::Const;
     let identifier = get_ident(&tokens[1]);
     assert_report(
-        tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()) && tokens[4].val == TokenVal::Assign,
+        tokens[2].val == TokenVal::Colon && token_is_type(tokens[3].val.clone()),
         Component::PARSER,
         tokens[2].clone(),
         "Invalid syntax for definition statement."
     );
-    let expr = parse_expression(tokens[5..tokens.len() - 1].to_vec());
     let typ = match tokens[3].val.clone() {
-        TokenVal::Type(t) => t,
+        TokenVal::Type(mut t) => {
+            for tok in &tokens[4..] {
+                if tok.val != TokenVal::Ops(Operation::Star) {break}
+                t.ptr_depth += 1;
+            }
+            t
+        },
         _ => {
             report_err(Component::PARSER, tokens[3].clone(), "Expected type in variable declaration.");
             unreachable!();
         }
     };
+    let expr = parse_expression(tokens[(5 + typ.ptr_depth) as usize..tokens.len() - 1].to_vec());
     Statement::Define(
         DefineStatement {
             is_const: is_const,

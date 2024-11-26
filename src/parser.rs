@@ -42,11 +42,11 @@ pub fn get_ident(tok: &Token) -> String {
         if let LitVal::Ident(val) = v.val.clone() {
             val
         } else {
-            report_err(Component::PARSER, tok.clone(), "Expected function identifier, got something else. Failed to compile.");
+            report_err(Component::PARSER, tok.clone(), "Expected identifier, got something else. Failed to compile.");
             String::from("ctfaw_failure")
         }
     } else {
-        report_err(Component::PARSER, tok.clone(), "Expected function identifier, got something else. Failed to compile.");
+        report_err(Component::PARSER, tok.clone(), "Expected identifier, got something else. Failed to compile.");
         String::from("ctfaw_failure")
     }
 }

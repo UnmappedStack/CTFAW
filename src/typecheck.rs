@@ -24,7 +24,7 @@ fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
                 _ => left,
             }
         },
-        BranchChildVal::StrLit(_) => Type {val: TypeVal::U64, ptr_depth: 0},
+        BranchChildVal::StrLit(_) => Type {val: TypeVal::U8, ptr_depth: 1},
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
         BranchChildVal::Ident(s) | BranchChildVal::Ref(s) | BranchChildVal::Deref(s) => {
             let ret_type = match vars.get(s.as_str()) {

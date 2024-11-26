@@ -1,7 +1,7 @@
 const globalthing: u64 = 21 + 3 * 2;
 
 func main() -> u64 {
-    let msg: u64 = "hello world!\n";
+    let msg: char* = "hello world!\n";
     let num: u64 = 5;
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
