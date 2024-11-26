@@ -1,12 +1,11 @@
-const globalthing: u64 = 21 + 3 * 2;
+const globalthing: u32 = 21 + 3 * 2;
 
-fn main() -> u64 {
+fn main() -> u32 {
     let msg: char* = "hello world!\n";
-    let num: u64 = 5;
-    let test: u32 = 12;
+    let num: u32 = 5;
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
-    let num_addr: u64* = &num;
+    let num_addr: u32* = &num;
     *num_addr = 42;
     return num + globalthing;
 }
