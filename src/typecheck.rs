@@ -9,7 +9,7 @@ use crate::error::*;
 use crate::ast::*;
 use crate::statements::*;
 
-fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
+fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
     match expr.val {
         BranchChildVal::Branch(v) => {
             let left = typecheck_expr(*v.left_val, vars);
@@ -26,10 +26,16 @@ fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
         },
         BranchChildVal::StrLit(_) => Type {val: TypeVal::U8, ptr_depth: 1},
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
-        BranchChildVal::Ident(s) | BranchChildVal::Ref(s) | BranchChildVal::Deref(s) => {
+        BranchChildVal::Ident(ref mut s) | BranchChildVal::Ref(ref mut s) | BranchChildVal::Deref(ref mut s) => {
             let ret_type = match vars.get(s.as_str()) {
                 Some(v) => {
-                    v
+                    let mut vc = v.clone();
+                    if let BranchChildVal::Ref(_) = expr.val {
+                        vc.ptr_depth += 1;
+                    } else if let BranchChildVal::Deref(_) = expr.val {
+                        vc.ptr_depth -= 1;
+                    }
+                    vc
                 },
                 None => {
                     report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, "Variable is not defined.");
