@@ -13,7 +13,7 @@ use crate::lexer::*;
 
 #[derive(Debug, Clone)]
 pub struct FuncArg {
-    pub arg_type: TokenVal,
+    pub arg_type: Type,
     pub val: String,
 }
 
@@ -121,7 +121,12 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             let identifier = get_ident(&tokens_whole[i + 4]);
             offset += 2;
             assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[i + 5].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
-            let argtype = decl_iter.next().unwrap().clone();
+            let argtype = if let TokenVal::Type(v) = decl_iter.next().unwrap().clone() {
+                v
+            } else {
+                report_err(Component::PARSER, tokens_whole[i + 6].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
+                unreachable!();
+            };
             args.push(FuncArg {
                 arg_type: argtype,
                 val: identifier,
@@ -149,7 +154,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         } else {
             Type {val: TypeVal::U32, ptr_depth: 0}
         };
-        let o = if is_specified { 6  } else { 4 } as usize;
+        let o = if is_specified { 6 } else { 4 } as usize;
         assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut n = 0;
