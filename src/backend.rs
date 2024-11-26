@@ -156,9 +156,7 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>, func: FuncTableVal) {
     compile_expression(out, expr, allvars.clone(), globals.clone()); // this already puts it into rax
-    for (i, v) in allvars.iter().enumerate() {
-        write_text(&mut out.text, out.spaces.clone(), format!("pop rdi").as_str());
-    }
+    write_text(&mut out.text, out.spaces.clone(), format!("add rsp, {}", allvars.len() * 8).as_str());
     write_text(&mut out.text, out.spaces.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), "ret");
 }
@@ -213,10 +211,10 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
         // init local vars
         for statement in &val.statements {
             if let Statement::Define(s) = statement {
-                write_text(&mut out.text, out.spaces.clone(), format!("push 0 ;; {}", s.identifier).as_str());
                 all_vars.push(s.identifier.clone());
             }
         }
+        write_text(&mut out.text, out.spaces.clone(), format!("sub rsp, {}", all_vars.len() * 8).as_str());
         write_text(&mut out.text, out.spaces.clone(), "mov rbp, rsp");
         // now actually compile the statements
         let mut has_early_ret = false;
@@ -231,9 +229,6 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
             }
         };
         if has_early_ret { continue }
-        for (i, v) in all_vars.iter().enumerate() {
-            write_text(&mut out.text, out.spaces.clone(), format!("pop rdi").as_str());
-        }
         write_text(&mut out.text, out.spaces.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), "mov rax, 0");
         write_text(&mut out.text, out.spaces.clone(), "ret");
