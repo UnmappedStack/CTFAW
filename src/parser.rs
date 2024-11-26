@@ -133,19 +133,24 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         let rettype = if *next_tok == TokenVal::Arrow {
             is_specified = true;
             offset += 2;
-            let result = if let TokenVal::Type(t) = decl_iter.next().unwrap().clone() {
+            let result = if let TokenVal::Type(mut t) = decl_iter.next().unwrap().clone() {
+                to_check = decl_iter.next().unwrap().clone();
+                for tok in &tokens_whole[i + 6..] {
+                    if tok.val != TokenVal::Ops(Operation::Star) {break}
+                    to_check = decl_iter.next().unwrap().clone();
+                    t.ptr_depth += 1;
+                }
                 t
             } else {
                 report_err(Component::PARSER, tokens_whole[i + 7].clone(), "Expected type after -> in function declaration specifying return type, got something else.");
                 unreachable!();
             };
-            to_check = decl_iter.next().unwrap().clone();
             result
         } else {
             Type {val: TypeVal::U32, ptr_depth: 0}
         };
-        let o = if is_specified { 9 } else { 7 };
-        assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{{`) after function declaration, got something else.");
+        let o = if is_specified { 6  } else { 4 } as usize;
+        assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut n = 0;
         while let Some(this_token) = decl_iter.next() {
