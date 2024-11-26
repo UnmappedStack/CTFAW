@@ -1,6 +1,6 @@
 const globalthing: u64 = 21 + 3 * 2;
 
-func main() -> u64 {
+fn main() -> u64 {
     let msg: char* = "hello world!\n";
     let num: u64 = 5;
     // write the text to stdout
@@ -10,7 +10,7 @@ func main() -> u64 {
     return num + globalthing;
 }
 
-func _start() {
+fn _start() {
     let status: u64 = main();
     asm("mov rax, 60\nsyscall" : "rdi" | status : :);
 }
