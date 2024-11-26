@@ -22,7 +22,7 @@ pub enum LitVal {
  * use by the user within the language. */
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Type {
+pub enum TypeVal {
     Any,
     U8,
     U16,
@@ -30,6 +30,12 @@ pub enum Type {
     U64,
     F64,
     Boolean,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Type {
+    pub val: TypeVal,
+    pub ptr_depth: u64,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -215,7 +221,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                             TokenVal::Literal(
                                 Literal {
                                     val: LitVal::Float(num_str.parse::<f64>().unwrap()),
-                                    typ: Type::F64
+                                    typ: Type {val: TypeVal::F64, ptr_depth: 0},
                                 }
                             ),
                         row, col)
@@ -226,7 +232,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                             TokenVal::Literal(
                                 Literal {
                                     val: LitVal::Int(num_str.parse::<u64>().unwrap()),
-                                    typ: Type::Any,
+                                    typ: Type {val: TypeVal::Any, ptr_depth: 0},
                                 }
                             )
                         , row, col)
@@ -250,7 +256,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 let mut string = String::from(s);
                 parse_escape_characters(&mut string);
                 // TODO: Make string literals become a char* type instead of u64
-                tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Str(string), typ: Type::U64}), row, col));
+                tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Str(string), typ: Type {val: TypeVal::U64, ptr_depth: 0}}), row, col));
                 c += i + 1;
                 col += i + 1;
                 iter.next();
@@ -270,15 +276,15 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 c += i;
                 col += i;
                 match s {
-                    "f64" => tokens.push(Token::new(TokenVal::Type(Type::F64), row, col)),
-                    "u8" => tokens.push(Token::new(TokenVal::Type(Type::U8), row, col)),
-                    "u16" => tokens.push(Token::new(TokenVal::Type(Type::U16), row, col)),
-                    "u32" => tokens.push(Token::new(TokenVal::Type(Type::U32), row, col)),
-                    "u64" => tokens.push(Token::new(TokenVal::Type(Type::U64), row, col)),
-                    "bool" => tokens.push(Token::new(TokenVal::Type(Type::Boolean), row, col)),
+                    "f64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::F64, ptr_depth: 0}), row, col)),
+                    "u8" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U8, ptr_depth: 0}), row, col)),
+                    "u16" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U16, ptr_depth: 0}), row, col)),
+                    "u32" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U32, ptr_depth: 0}), row, col)),
+                    "u64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U64, ptr_depth: 0}), row, col)),
+                    "bool" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::Boolean, ptr_depth: 0}), row, col)),
                     "let" => tokens.push(Token::new(TokenVal::Let, row, col)),
-                    "true" => tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Bool(1), typ: Type::Boolean}), row, col)),
-                    "false" => tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Bool(0), typ: Type::Boolean}), row, col)),
+                    "true" => tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Bool(1), typ:  Type {val: TypeVal::Boolean, ptr_depth: 0}}), row, col)),
+                    "false" => tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Bool(0), typ: Type {val: TypeVal::Boolean, ptr_depth: 0}}), row, col)),
                     "const" => tokens.push(Token::new(TokenVal::Const, row, col)),
                     "if" => tokens.push(Token::new(TokenVal::If, row, col)),
                     "else" => tokens.push(Token::new(TokenVal::Else, row, col)),
@@ -286,7 +292,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                     "func" => tokens.push(Token::new(TokenVal::Func, row, col)),
                     "while" => tokens.push(Token::new(TokenVal::While, row, col)),
                     "return" => tokens.push(Token::new(TokenVal::Return, row, col)),
-                    _ => tokens.push(Token::new(TokenVal::Literal(Literal { val: LitVal::Ident(String::from(s)), typ: Type::Any}), row, col)),
+                    _ => tokens.push(Token::new(TokenVal::Literal(Literal { val: LitVal::Ident(String::from(s)), typ: Type {val: TypeVal::Any, ptr_depth: 0}}), row, col)),
                 }
             },
             _ => {

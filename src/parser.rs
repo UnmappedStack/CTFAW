@@ -137,12 +137,12 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
                 t
             } else {
                 report_err(Component::PARSER, tokens_whole[i + 7].clone(), "Expected type after -> in function declaration specifying return type, got something else.");
-                Type::Any
+                unreachable!();
             };
             to_check = decl_iter.next().unwrap().clone();
             result
         } else {
-            Type::U32
+            Type {val: TypeVal::U32, ptr_depth: 0}
         };
         let o = if is_specified { 9 } else { 7 };
         assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{{`) after function declaration, got something else.");

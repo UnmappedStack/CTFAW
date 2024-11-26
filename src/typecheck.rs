@@ -15,17 +15,17 @@ fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
             let left = typecheck_expr(*v.left_val, vars);
             let right = typecheck_expr(*v.right_val, vars);
             if left != right &&
-                    !(left == Type::Any || right == Type::Any) {
+                    !(left.val == TypeVal::Any || right.val == TypeVal::Any) {
                 report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, "Cannot operate on different types.");
                 unreachable!();
             }
-            match left {
-                Type::Any => right,
+            match left.val {
+                TypeVal::Any => right,
                 _ => left,
             }
         },
-        BranchChildVal::StrLit(_) => Type::U64,
-        BranchChildVal::Float(_) => Type::F64,
+        BranchChildVal::StrLit(_) => Type {val: TypeVal::U64, ptr_depth: 0},
+        BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
         BranchChildVal::Ident(s) | BranchChildVal::Ref(s) | BranchChildVal::Deref(s) => {
             let ret_type = match vars.get(s.as_str()) {
                 Some(v) => v,
@@ -36,7 +36,7 @@ fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
             };
             ret_type.clone()
         },
-        _ => Type::Any,
+        _ => Type {val: TypeVal::Any, ptr_depth: 0},
     }
 }
 
@@ -47,7 +47,7 @@ fn typecheck_simple(ret_type: Type, expr: BranchChild, vars: &HashMap<String, Ty
     } else {
         format!("Cannot assign value of type {:?} to variable of type {:?}", val_type, ret_type)
     };
-    if val_type != ret_type && val_type != Type::Any {
+    if val_type != ret_type && val_type.val != TypeVal::Any {
         report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, error_message.as_str());
     }
 }

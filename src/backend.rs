@@ -113,7 +113,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
             let mut stringchars: Vec<String> = val.chars().map(|c| (c as u8).to_string()).collect();
             stringchars.push(String::from("0")); // make sure it has a null terminator
             out.string_literals.push(stringchars.join(", "));
-            write_text(&mut out.text, out.spaces.clone(), format!("mov rax, strlit{}", out.num_strings).as_str());
+            write_text(&mut out.text, out.spaces.clone(), format!("lea rax, [strlit{}]", out.num_strings).as_str());
             out.num_strings += 1;
         },
         _ => {
