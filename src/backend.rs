@@ -83,16 +83,16 @@ fn get_local_offset(v: String, allvars: Vec<LocalVar>) -> usize {
     }
 }
 
-fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> String {
+fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> (String, Type) {
     let local_pos = locals.iter().position(|s| s.ident == v);
     match local_pos {
         Some(val) => {
-            format!("[rbp + {}]", val * 8)
+            (format!("[rbp + {}]", val * 8), locals[val].typ.clone())
         },
         None => {
             let global_pos = globals.iter().position(|s| s.identifier == v);
             match global_pos {
-                Some(val) => format!("{}", globals[val].val),
+                Some(val) => (format!("{}", globals[val].val), globals[val].typ.clone()),
                 None => { panic!("Variable not defined in current scope.") }
             }
         }
@@ -137,16 +137,16 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<L
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, {}", val).as_str());
         },
         BranchChildVal::Deref(val) => {
-            let loc = get_var_loc(val, allvars, globals);
+            let loc = get_var_loc(val, allvars, globals).0;
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, [{}]\nmov rax, rax", loc).as_str());
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, rax").as_str());
         },
         BranchChildVal::Ref(val) => {
-            let loc = get_var_loc(val, allvars, globals);
+            let loc = get_var_loc(val, allvars, globals).0;
             write_text(&mut out.text, out.spaces.clone(), format!("lea rax, {}", loc).as_str());
         },
         BranchChildVal::Ident(val) => {
-            let loc = get_var_loc(val, allvars, globals);
+            let loc = get_var_loc(val, allvars, globals).0;
             write_text(&mut out.text, out.spaces.clone(), format!("mov rax, {}", loc).as_str());
         },
         BranchChildVal::Fn(val) => {
@@ -178,8 +178,8 @@ pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<
 pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     //write_text(&mut out.data, format!("{}: dq 0", statement.identifier).as_str());
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
-    let loc = get_var_loc(statement.identifier, allvars, globals);
-    write_text(&mut out.text, out.spaces.clone(), format!("mov {}, rax", loc).as_str());
+    let loc = get_var_loc(statement.identifier, allvars, globals).0;
+    write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", loc, register_of_size("rax", statement.def_type)).as_str());
 
 }
 
@@ -187,13 +187,13 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
     if statement.deref {
         write_text(&mut out.text, out.spaces.clone(), "push rbx");
-        let loc = get_var_loc(statement.identifier, allvars, globals);
+        let loc = get_var_loc(statement.identifier, allvars, globals).0;
         write_text(&mut out.text, out.spaces.clone(), format!("mov rbx, {}", loc).as_str());
         write_text(&mut out.text, out.spaces.clone(), format!("mov [rbx], rax").as_str());
         write_text(&mut out.text, out.spaces.clone(), "pop rbx");
         return
     }
-    let loc = get_var_loc(statement.identifier, allvars, globals);
+    let loc = get_var_loc(statement.identifier, allvars, globals).0;
     write_text(&mut out.text, out.spaces.clone(), format!("mov {}, rax", loc).as_str());
 }
 
@@ -209,11 +209,11 @@ pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, 
         write_text(&mut out.text, out.spaces.clone(), format!("push {}", clobber).as_str());
     }
     for input in statement.inputs {
-        write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", input.register,  get_var_loc(input.identifier, allvars.clone(), globals.clone())).as_str());
+        write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", input.register, get_var_loc(input.identifier, allvars.clone(), globals.clone()).0).as_str());
     }
     write_text(&mut out.text, out.spaces.clone(), format!("{}", statement.asm).as_str());
     for output in statement.outputs {
-        write_text(&mut out.text, out.spaces.clone(), format!("mov {}, [{}]", get_var_loc(output.identifier, allvars.clone(), globals.clone()), output.register).as_str());
+        write_text(&mut out.text, out.spaces.clone(), format!("mov {}, [{}]", get_var_loc(output.identifier, allvars.clone(), globals.clone()).0, output.register).as_str());
     }
     for clobber in &statement.clobbers {
         write_text(&mut out.text, out.spaces.clone(), format!("pop {}", clobber).as_str());
