@@ -22,6 +22,7 @@ pub struct DefineStatement {
 #[derive(Debug, Clone)]
 pub struct AssignStatement {
     pub deref: bool,
+    pub typ: Type,
     pub identifier: String,
     pub ident_tok: Token,
     pub expr: BranchChild,
@@ -110,6 +111,7 @@ fn parse_assign_statement(mut tokens: Vec<Token>, deref: bool) -> Statement {
     Statement::Assign(
         AssignStatement {
             deref,
+            typ: Type {val: TypeVal::Any, ptr_depth: 0},
             identifier,
             ident_tok: tokens[0].clone(),
             expr,

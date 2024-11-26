@@ -278,7 +278,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 col += i;
                 match s {
                     "f64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::F64, ptr_depth: 0}), row, col)),
-                    "u8" | "char" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U8, ptr_depth: 0}), row, col)),
+                    "u8" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U8, ptr_depth: 0}), row, col)),
+                    "char" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::Char, ptr_depth: 0}), row, col)),
                     "u16" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U16, ptr_depth: 0}), row, col)),
                     "u32" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U32, ptr_depth: 0}), row, col)),
                     "u64" => tokens.push(Token::new(TokenVal::Type(Type {val: TypeVal::U64, ptr_depth: 0}), row, col)),

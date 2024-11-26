@@ -22,6 +22,49 @@ pub struct CompiledAsm {
     spaces: String,
 }
 
+#[derive(Clone)]
+pub struct LocalVar {
+    ident: String,
+    typ: Type,
+}
+
+// Takes a type and outputs the size (in bytes)
+fn type_to_size(typ: Type) -> u64 {
+    match typ.val {
+        TypeVal::U8 | TypeVal::Char | TypeVal::Boolean => 1,
+        TypeVal::U16 => 2,
+        TypeVal::U32 => 4,
+        TypeVal::U64 | TypeVal::F64 => 8,
+        _ => todo!()
+    }
+}
+
+// Takes a (64 bit) register and a type, outputs the corresponding register name of the right size
+fn register_of_size(original: &str, typ: Type) -> String {
+    match type_to_size(typ) {
+        1 => {
+            let mut copy = String::from(&original[1..]);
+            copy.replace_range(1..2, "l"); // copy[1] = 'l';
+            if original == "rsi" || original == "rdi" {
+                copy.insert(1, 'i');
+            }
+            copy
+        },
+        2 => {
+            String::from(&original[1..])
+        },
+        4 => {
+            let mut copy = String::from(original);
+            copy.replace_range(0..1, "e"); // copy[0] = 'e';
+            copy
+        },
+        8 => {
+            String::from(original)
+        },
+        _ => unreachable!()
+    }
+}
+
 fn write_text(txt: &mut String, spaces: String, new: &str) {
     let _ = txt.write_str(spaces.as_str());
     let replaced = new.replace("\n", format!("\n{spaces}").as_str());
@@ -29,8 +72,8 @@ fn write_text(txt: &mut String, spaces: String, new: &str) {
     let _ = txt.write_str("\n");
 }
 
-fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
-    match allvars.iter().position(|s| *s == v) {
+fn get_local_offset(v: String, allvars: Vec<LocalVar>) -> usize {
+    match allvars.iter().position(|s| s.ident == v) {
         Some(val) => {
             val * 8
         },
@@ -40,8 +83,8 @@ fn get_local_offset(v: String, allvars: Vec<String>) -> usize {
     }
 }
 
-fn get_var_loc(v: String, locals: Vec<String>, globals: Vec<GlobalVar>) -> String {
-    let local_pos = locals.iter().position(|s| *s == v);
+fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> String {
+    let local_pos = locals.iter().position(|s| s.ident == v);
     match local_pos {
         Some(val) => {
             format!("[rbp + {}]", val * 8)
@@ -79,7 +122,7 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation) {
 }
 
 /* The result of a single AST branch is stored in RAX. */
-fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     match branch.val {
         BranchChildVal::Branch(val) => {
             // compile it as a branch
@@ -122,7 +165,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<S
     }
 }
 
-pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     if let BranchChildVal::Branch(_) = ast.val {
         write_text(&mut out.text, out.spaces.clone(), "push rbx");
         compile_ast_branch(out, ast, allvars, globals);
@@ -132,7 +175,7 @@ pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<
     }
 }
 
-pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     //write_text(&mut out.data, format!("{}: dq 0", statement.identifier).as_str());
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
     let loc = get_var_loc(statement.identifier, allvars, globals);
@@ -140,7 +183,7 @@ pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars
 
 }
 
-pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     compile_expression(out, statement.expr, allvars.clone(), globals.clone());
     if statement.deref {
         write_text(&mut out.text, out.spaces.clone(), "push rbx");
@@ -154,14 +197,14 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
     write_text(&mut out.text, out.spaces.clone(), format!("mov {}, rax", loc).as_str());
 }
 
-pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>, func: FuncTableVal) {
+pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal) {
     compile_expression(out, expr, allvars.clone(), globals.clone()); // this already puts it into rax
     write_text(&mut out.text, out.spaces.clone(), format!("add rsp, {}", allvars.len() * 8).as_str());
     write_text(&mut out.text, out.spaces.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), "ret");
 }
 
-pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     for clobber in &statement.clobbers {
         write_text(&mut out.text, out.spaces.clone(), format!("push {}", clobber).as_str());
     }
@@ -177,7 +220,7 @@ pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, 
     }
 }
 
-pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement, allvars: Vec<String>, globals: Vec<GlobalVar>) {
+pub fn compile_func_call(out: &mut CompiledAsm, statement: FuncCallStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     for arg in 0..statement.args.len() {
         write_text(&mut out.text, out.spaces.clone(), "push rax");
         compile_expression(out, statement.args[arg].clone(), allvars.clone(), globals.clone());
@@ -206,12 +249,18 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
         for (i, arg) in val.signature.args.iter().enumerate() {
             assert!(i < 6, "Function calls with more than 6 args are not yet allowed.");
             write_text(&mut out.text, out.spaces.clone(), format!("push {}", REGS[i]).as_str());
-            all_vars.push(arg.val.clone());
+            all_vars.push(LocalVar {
+                ident: arg.val.clone(),
+                typ: arg.arg_type.clone(),
+            });
         }
         // init local vars
         for statement in &val.statements {
             if let Statement::Define(s) = statement {
-                all_vars.push(s.identifier.clone());
+                all_vars.push(LocalVar {
+                    ident: s.identifier.clone(),
+                    typ: s.def_type.clone(),
+                });
             }
         }
         write_text(&mut out.text, out.spaces.clone(), format!("sub rsp, {}", all_vars.len() * 8).as_str());

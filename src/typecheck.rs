@@ -24,7 +24,7 @@ fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
                 _ => left,
             }
         },
-        BranchChildVal::StrLit(_) => Type {val: TypeVal::U8, ptr_depth: 1},
+        BranchChildVal::StrLit(_) => Type {val: TypeVal::Char, ptr_depth: 1},
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
         BranchChildVal::Ident(ref mut s) | BranchChildVal::Ref(ref mut s) | BranchChildVal::Deref(ref mut s) => {
             let ret_type = match vars.get(s.as_str()) {
@@ -82,6 +82,8 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
                         }
                     };
                     typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false);
+                    let mut s_copy = s.clone();
+                    s_copy.typ = ret_type.clone();
                 },
                 Statement::Return(s) => {
                     typecheck_simple(entry.1.signature.ret_type.clone(), s.clone(), &local_vars, true);
