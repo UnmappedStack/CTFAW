@@ -28,7 +28,9 @@ fn typecheck_expr(expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
         BranchChildVal::Ident(s) | BranchChildVal::Ref(s) | BranchChildVal::Deref(s) => {
             let ret_type = match vars.get(s.as_str()) {
-                Some(v) => v,
+                Some(v) => {
+                    v
+                },
                 None => {
                     report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, "Variable is not defined.");
                     unreachable!();

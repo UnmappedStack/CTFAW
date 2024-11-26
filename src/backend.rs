@@ -151,7 +151,7 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
         return
     }
     let loc = get_var_loc(statement.identifier, allvars, globals);
-    write_text(&mut out.text, out.spaces.clone(), format!("lea {}, [rax]", loc).as_str());
+    write_text(&mut out.text, out.spaces.clone(), format!("mov {}, rax", loc).as_str());
 }
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<String>, globals: Vec<GlobalVar>, func: FuncTableVal) {
