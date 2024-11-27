@@ -50,6 +50,7 @@ You can also use the following options:
 - [X] Use specified data sizes in generated assembly & proper stack alignation
 - [ ] Casting
 - [ ] Externs & libc compatibility
+- [ ] Signed operations
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)
 - [ ] Bitwise operations (`>>`/`<<`, `|`, `&`, `~`, etc.)
 - [ ] Arrays
@@ -59,6 +60,7 @@ You can also use the following options:
     - [ ] Elseif
     - [ ] While
     - [ ] For
+- [ ] Floats (maybe? seems kinda hard)
 - [ ] More to come...
 
 ## License & Contributing
