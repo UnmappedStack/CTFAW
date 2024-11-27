@@ -12,8 +12,8 @@ use crate::statements::*;
 
 #[derive(Debug, Clone)]
 pub struct Cast {
-    val: BranchChildVal,
-    typ: Type,
+    pub val: BranchChild,
+    pub typ: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -203,7 +203,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             BranchChild {
                 val: BranchChildVal::Cast(
                     Box::new(Cast {
-                        val: left_branch.val,
+                        val: *left_branch,
                         typ: {
                             let iter = &mut tokens[max_priority_idx + 1..].iter();
                             if let TokenVal::Type(mut t) = iter.next().unwrap().clone().val {

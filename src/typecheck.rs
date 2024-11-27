@@ -11,6 +11,10 @@ use crate::statements::*;
 
 fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, program: &HashMap<String, FuncTableVal>) -> Type {
     match expr.val {
+        BranchChildVal::Cast(v) => {
+            typecheck_expr(v.val, vars, program);
+            v.typ
+        },
         BranchChildVal::Branch(v) => {
             let left = typecheck_expr(*v.left_val, vars, program);
             let right = typecheck_expr(*v.right_val, vars, program);
