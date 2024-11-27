@@ -215,7 +215,7 @@ pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal) {
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), ";; Early return from function");
     compile_expression(out, expr, allvars.clone(), globals.clone(), func.signature.ret_type); // this already puts it into rax
-    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", allvars.len() * 8).as_str());
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", allvars.len() * 16).as_str());
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
 }
@@ -280,7 +280,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 });
             }
         }
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", all_vars.len() * 8).as_str());
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", all_vars.len() * 16).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
         // now actually compile the statements
         let mut has_early_ret = false;
@@ -295,6 +295,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             }
         };
         if has_early_ret { continue }
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", all_vars.len() * 16).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
