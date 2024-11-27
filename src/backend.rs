@@ -88,22 +88,15 @@ fn write_text(txt: &mut String, spaces: String, flags: Flags, new: &str) {
     let _ = txt.write_str("\n");
 }
 
-fn get_local_offset(v: String, allvars: Vec<LocalVar>) -> usize {
-    match allvars.iter().position(|s| s.ident == v) {
-        Some(val) => {
-            val * 8
-        },
-        None => {
-            panic!("Variable not defined in current scope.")
-        }
-    }
-}
-
 fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> (String, Type) {
     let local_pos = locals.iter().position(|s| s.ident == v);
     match local_pos {
         Some(val) => {
-            (format!("{} [rbp + {}]", ptr_ident_of_size(locals[val].typ.clone()), val * 8), locals[val].typ.clone())
+            let mut off = 0;
+            for v in &locals {
+                off += type_to_size(v.typ.clone());
+            }
+            (format!("{} [rbp + {}]", ptr_ident_of_size(locals[val].typ.clone()), off), locals[val].typ.clone())
         },
         None => {
             let global_pos = globals.iter().position(|s| s.identifier == v);
