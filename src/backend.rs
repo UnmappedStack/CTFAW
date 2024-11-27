@@ -35,11 +35,19 @@ pub struct LocalVar {
 fn type_to_size(typ: Type) -> u64 {
     if typ.ptr_depth > 0 { return 8 }
     match typ.val {
-        TypeVal::U8 | TypeVal::Char | TypeVal::Boolean => 1,
-        TypeVal::U16 => 2,
-        TypeVal::U32 => 4,
-        TypeVal::U64 | TypeVal::F64 => 8,
+        TypeVal::U8 | TypeVal::I8 | TypeVal::Char | TypeVal::Boolean => 1,
+        TypeVal::U16 | TypeVal::I16 => 2,
+        TypeVal::U32 | TypeVal::I32 => 4,
+        TypeVal::U64 | TypeVal::I64 | TypeVal::F64 => 8,
         _ => todo!()
+    }
+}
+
+fn check_type_signed(typ: Type) -> bool {
+    if typ.ptr_depth > 0 { return false }
+    match typ.val {
+        TypeVal::I8 | TypeVal::I16 | TypeVal::I32 | TypeVal::I64 | TypeVal::F64 => true,
+        _ => false,
     }
 }
 
@@ -111,10 +119,12 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> (St
 /* Operands are in rax and rbx, and returns in rax. */
 fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
     let rax_sized = register_of_size("rax", rettype.clone());
-    let rbx_sized = register_of_size("rbx", rettype);
+    let rbx_sized = register_of_size("rbx", rettype.clone());
+    let is_signed = check_type_signed(rettype);
     match op {
         Operation::Star => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mul {}", rbx_sized).as_str());
+            let op = if is_signed { "imul" } else { "mul" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} {}", op, rbx_sized).as_str());
         },
         Operation::Add => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add {}, {}", rax_sized, rbx_sized).as_str());
@@ -124,7 +134,8 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, rbx_sized).as_str());
         },
         Operation::Div => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("div {}", rbx_sized).as_str());
+            let op = if is_signed { "idiv" } else { "div" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} {}", op, rbx_sized).as_str());
         },
         _ => {
             panic!("Unsupported operation.")
