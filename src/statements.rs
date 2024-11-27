@@ -30,6 +30,7 @@ pub struct AssignStatement {
 
 #[derive(Debug, Clone)]
 pub struct FuncCallStatement {
+    pub ident_tok: Token,
     pub fn_ident: String,
     pub args: Vec<BranchChild>,
     pub row: u64,
@@ -210,6 +211,7 @@ pub fn parse_func_call_statement(tokens: Vec<Token>) -> Statement {
     let args = parse_expr_list(tokens[2..tokens.len() - 2].to_vec());
     Statement::FuncCall(
         FuncCallStatement {
+            ident_tok: tokens[0].clone(),
             fn_ident: identifier,
             args,
             row: tokens[0].row.clone(),

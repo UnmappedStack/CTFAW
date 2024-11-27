@@ -9,11 +9,11 @@ use crate::error::*;
 use crate::ast::*;
 use crate::statements::*;
 
-fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
+fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, program: &HashMap<String, FuncTableVal>) -> Type {
     match expr.val {
         BranchChildVal::Branch(v) => {
-            let left = typecheck_expr(*v.left_val, vars);
-            let right = typecheck_expr(*v.right_val, vars);
+            let left = typecheck_expr(*v.left_val, vars, program);
+            let right = typecheck_expr(*v.right_val, vars, program);
             if left != right &&
                     !(left.val == TypeVal::Any || right.val == TypeVal::Any) {
                 report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, "Cannot operate on different types.");
@@ -44,12 +44,23 @@ fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>) -> Type {
             };
             ret_type.clone()
         },
+        BranchChildVal::Fn(f) => {
+            match program.get(&f.fn_ident) {
+                Some(func) => {
+                    func.signature.ret_type.clone()
+                },
+                None => {
+                    report_err(Component::ANALYSIS, f.ident_tok, "Function not defined.");
+                    unreachable!();
+                }
+            }
+        },
         _ => Type {val: TypeVal::Any, ptr_depth: 0},
     }
 }
 
-fn typecheck_simple(ret_type: Type, expr: BranchChild, vars: &HashMap<String, Type>, is_ret_statement: bool) {
-    let val_type = typecheck_expr(expr.clone(), vars);
+fn typecheck_simple(ret_type: Type, expr: BranchChild, vars: &HashMap<String, Type>, is_ret_statement: bool, program: &HashMap<String, FuncTableVal>) {
+    let val_type = typecheck_expr(expr.clone(), vars, program);
     let error_message = if is_ret_statement {
         format!("Cannot return value of type {:?} from function of type {:?}", val_type, ret_type)
     } else {
@@ -70,7 +81,7 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
         for statement in statements {
             match statement {
                 Statement::Define(s) => {
-                    typecheck_simple(s.def_type.clone(), s.expr.clone(), &local_vars, false);
+                    typecheck_simple(s.def_type.clone(), s.expr.clone(), &local_vars, false, program);
                     local_vars.insert(s.identifier.clone(), s.def_type.clone());
                 },
                 Statement::Assign(s) => {
@@ -81,12 +92,12 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
                             unreachable!();
                         }
                     };
-                    typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false);
+                    typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false, program);
                     let mut s_copy = s.clone();
                     s_copy.typ = ret_type.clone();
                 },
                 Statement::Return(s) => {
-                    typecheck_simple(entry.1.signature.ret_type.clone(), s.clone(), &local_vars, true);
+                    typecheck_simple(entry.1.signature.ret_type.clone(), s.clone(), &local_vars, true, program);
                 },
                 Statement::FuncCall(c) => {
                     let func = match program.get(&c.fn_ident) {
@@ -98,7 +109,7 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
                     };
                     assert_report(c.args.len() == func.signature.args.len(), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call.");
                     for (i, arg) in c.args.clone().into_iter().enumerate() {
-                        let val_type = typecheck_expr(arg, &local_vars);
+                        let val_type = typecheck_expr(arg, &local_vars, program);
                         assert_report(val_type == func.signature.args[i].arg_type, Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Argument {} of function call recieved is type {:?}, expected type {:?}", i, val_type, func.signature.args[i].arg_type).as_str());
                     }
                 }
