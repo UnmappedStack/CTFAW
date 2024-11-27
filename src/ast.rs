@@ -12,6 +12,7 @@ use crate::statements::*;
 #[derive(Debug, Clone)]
 pub enum BranchChildVal {
     Branch(ASTBranch),
+    Char(u8),
     Int(u64),
     Float(f64),
     Ident(String),
@@ -148,6 +149,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     if tokens_len == 1 {
         // It's a number so return a child with just a number
         match lit_o.expect("Value in expression which is not a number or identifier.").val.clone() {
+            LitVal::Char(val) => return Box::new(BranchChild {val: BranchChildVal::Char(val), row: tokens[0].row, col: tokens[0].col}),
             LitVal::Int(val) => return Box::new(BranchChild {val: BranchChildVal::Int(val), row: tokens[0].row, col: tokens[0].col}),
             LitVal::Float(val) => return Box::new(BranchChild {val: BranchChildVal::Float(val), row: tokens[0].row, col: tokens[0].col}),
             LitVal::Ident(val) => return Box::new(BranchChild {val: BranchChildVal::Ident(val.clone()), row: tokens[0].row, col: tokens[0].col}),

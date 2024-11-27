@@ -11,7 +11,7 @@ use std::fmt::Write;
 
 // Registers in order of arguments for passing into a function with the SYS-V ABI
 const REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
-const DEBUG: bool = false;
+const DEBUG: bool = true;
 
 #[derive(Clone)]
 pub struct CompiledAsm {
@@ -148,6 +148,9 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<L
             compile_ast_branch(out, *val.right_val, allvars, globals, rettype.clone());
             write_text(&mut out.text, out.spaces.clone(), "pop rbx");
             compile_operation(out, val.op, rettype);
+        },
+        BranchChildVal::Char(val) => {
+            write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", rax_sized, val).as_str());
         },
         BranchChildVal::Int(val) => {
             // just return the value

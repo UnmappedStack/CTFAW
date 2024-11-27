@@ -13,6 +13,7 @@ pub enum Operation {
 pub enum LitVal {
     Ident(String),
     Int(u64),
+    Char(u8),
     Float(f64),
     Bool(u8),
     Str(String),
@@ -93,11 +94,27 @@ fn is_ident_char(ch: char) -> bool {
 }
 
 fn parse_escape_characters(s: &mut String) {
-    *s = s.replace("\\n", "\n");
+    *s = s.replace("\\\\", "\\");
     *s = s.replace("\\\"", "\"");
+    *s = s.replace("\\n", "\n");
     *s = s.replace("\\r", "\r");
     *s = s.replace("\\t", "\t");
     *s = s.replace("\\'", "\'");
+}
+
+fn escape_char(c: char, row: u64, col: u64) -> char {
+    return match c {
+        '\\' => '\\',
+        '\"' => '\"',
+        'n' => '\n',
+        'r' => '\r',
+        't' => '\t',
+        '\'' => '\'',
+        _ => {
+            report_err(Component::LEXER, Token {val: TokenVal::Endln, row, col}, "Unknown escape sequence.");
+            unreachable!();
+        }
+    }
 }
 
 impl Token {
@@ -261,7 +278,25 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 c += i + 1;
                 col += i + 1;
                 iter.next();
-            }
+            },
+            // handle characters
+            '\'' => {
+                let next_char = iter.next().unwrap();
+                let result = if next_char == '\\' {
+                    col += 1;
+                    c += 1;
+                    escape_char(iter.next().unwrap(), row as u64, col as u64)
+                } else {
+                    next_char
+                };
+                tokens.push(Token::new(TokenVal::Literal(Literal {val: LitVal::Char(result as u8), typ: Type {val: TypeVal::Char, ptr_depth: 0}}), row, col));
+                if iter.next().unwrap() != '\'' {
+                    report_err(Component::LEXER, Token {val: TokenVal::Endln, row: row as u64, col: col as u64}, "Expected ' at end of character literal, got something else.");
+                    unreachable!();
+                }
+                col += 2;
+                c += 2;
+            },
             // handle both identifiers and keywords
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut this_char: char = current_char;

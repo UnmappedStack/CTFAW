@@ -26,6 +26,7 @@ fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, program: 
         },
         BranchChildVal::StrLit(_) => Type {val: TypeVal::Char, ptr_depth: 1},
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
+        BranchChildVal::Char(_) => Type {val: TypeVal::Char, ptr_depth: 0},
         BranchChildVal::Ident(ref mut s) | BranchChildVal::Ref(ref mut s) | BranchChildVal::Deref(ref mut s) => {
             let ret_type = match vars.get(s.as_str()) {
                 Some(v) => {
