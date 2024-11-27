@@ -11,6 +11,7 @@ use std::fmt::Write;
 
 // Registers in order of arguments for passing into a function with the SYS-V ABI
 const REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+const DEBUG: bool = false;
 
 #[derive(Clone)]
 pub struct CompiledAsm {
@@ -66,7 +67,19 @@ fn register_of_size(original: &str, typ: Type) -> String {
     }
 }
 
+fn ptr_ident_of_size(typ: Type) -> String {
+    let s = match type_to_size(typ) {
+        1 => "BYTE",
+        2 => "WORD",
+        4 => "DWORD",
+        8 => "QWORD",
+        _ => unreachable!()
+    };
+    String::from(s)
+}
+
 fn write_text(txt: &mut String, spaces: String, new: &str) {
+    if new.as_bytes()[0] == ';' as u8 && !DEBUG {return}
     let _ = txt.write_str(spaces.as_str());
     let replaced = new.replace("\n", format!("\n{spaces}").as_str());
     let _ = txt.write_str(replaced.as_str());
@@ -88,7 +101,7 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> (St
     let local_pos = locals.iter().position(|s| s.ident == v);
     match local_pos {
         Some(val) => {
-            (format!("[rbp + {}]", val * 8), locals[val].typ.clone())
+            (format!("{} [rbp + {}]", ptr_ident_of_size(locals[val].typ.clone()), val * 8), locals[val].typ.clone())
         },
         None => {
             let global_pos = globals.iter().position(|s| s.identifier == v);
@@ -169,37 +182,33 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<L
 }
 
 pub fn compile_expression(out: &mut CompiledAsm, ast: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, rettype: Type) {
-    if let BranchChildVal::Branch(_) = ast.val {
-        write_text(&mut out.text, out.spaces.clone(), "push rbx");
-        compile_ast_branch(out, ast, allvars, globals, rettype);
-        write_text(&mut out.text, out.spaces.clone(), "pop rbx");
-    } else {
-        compile_ast_branch(out, ast, allvars, globals, rettype);
-    }
+    write_text(&mut out.text, out.spaces.clone(), ";; Solve expression");
+    compile_ast_branch(out, ast, allvars, globals, rettype);
 }
 
 pub fn compile_define(out: &mut CompiledAsm, statement: DefineStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     //write_text(&mut out.data, format!("{}: dq 0", statement.identifier).as_str());
-    let loc = get_var_loc(statement.identifier, allvars.clone(), globals.clone());
+    let loc = get_var_loc(statement.identifier.clone(), allvars.clone(), globals.clone());
     compile_expression(out, statement.expr, allvars.clone(), globals.clone(), loc.1);
+    write_text(&mut out.text, out.spaces.clone(), format!(";; Assign value to var {} and define it", statement.identifier).as_str());
     write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", loc.0, register_of_size("rax", statement.def_type)).as_str());
 
 }
 
 pub fn compile_assign(out: &mut CompiledAsm, statement: AssignStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
-    let loc = get_var_loc(statement.identifier, allvars.clone(), globals.clone());
+    let loc = get_var_loc(statement.identifier.clone(), allvars.clone(), globals.clone());
     compile_expression(out, statement.expr, allvars.clone(), globals.clone(), loc.clone().1);
     if statement.deref {
-        write_text(&mut out.text, out.spaces.clone(), "push rbx");
+        write_text(&mut out.text, out.spaces.clone(), format!(";; Assign value to var {}", statement.identifier).as_str());
         write_text(&mut out.text, out.spaces.clone(), format!("mov rbx, {}", loc.0).as_str());
         write_text(&mut out.text, out.spaces.clone(), format!("mov [rbx], {}", register_of_size("rax", loc.1)).as_str());
-        write_text(&mut out.text, out.spaces.clone(), "pop rbx");
         return
     }
     write_text(&mut out.text, out.spaces.clone(), format!("mov {}, {}", loc.0, register_of_size("rax", loc.1)).as_str());
 }
 
 pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal) {
+    write_text(&mut out.text, out.spaces.clone(), ";; Early return from function");
     compile_expression(out, expr, allvars.clone(), globals.clone(), func.signature.ret_type); // this already puts it into rax
     write_text(&mut out.text, out.spaces.clone(), format!("add rsp, {}", allvars.len() * 8).as_str());
     write_text(&mut out.text, out.spaces.clone(), "pop rbp");
@@ -207,6 +216,7 @@ pub fn compile_return(out: &mut CompiledAsm, expr: BranchChild, allvars: Vec<Loc
 }
 
 pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
+    write_text(&mut out.text, out.spaces.clone(), ";; Inline assembly");
     for clobber in &statement.clobbers {
         write_text(&mut out.text, out.spaces.clone(), format!("push {}", clobber).as_str());
     }
@@ -281,7 +291,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
         };
         if has_early_ret { continue }
         write_text(&mut out.text, out.spaces.clone(), "pop rbp");
-        write_text(&mut out.text, out.spaces.clone(), "mov rax, 0");
+        write_text(&mut out.text, out.spaces.clone(), "xor rax, rax");
         write_text(&mut out.text, out.spaces.clone(), "ret");
     }
     
@@ -290,7 +300,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>) 
     for strlit in 0..out.num_strings {
         write_text(&mut out.rodata, out.spaces.clone(), format!("strlit{}: db {}", strlit, out.string_literals[strlit]).as_str());
     }
-
+    
     let mut file = File::create("out.asm").expect("Couldn't open file");
     let _ = file.write_all(format!("[BITS 64]\n\nglobal _start\n").as_bytes());
     let _ = file.write_all(format!("\nsection .text\n{}\n", out.text).as_bytes());

@@ -12,5 +12,5 @@ fn main() -> u32 {
 
 fn _start() {
     let status: u32 = main();
-    asm("mov rax, 60\nsyscall" : "rdi" | status : :);
+    asm("mov rax, 60\nsyscall" : "edi" | status : :);
 }
