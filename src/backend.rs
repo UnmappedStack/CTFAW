@@ -144,6 +144,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<L
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbx");
             compile_operation(out, val.op, rettype);
         },
+        BranchChildVal::Cast(val) => compile_ast_branch(out, val.val, allvars.clone(), globals.clone(), val.typ),
         BranchChildVal::Char(val) => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, val).as_str());
         },
@@ -174,7 +175,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, branch: BranchChild, allvars: Vec<L
             out.num_strings += 1;
         },
         _ => {
-            panic!("Not implemented yet, expressions can't yet handle floating point values.")
+            panic!("Not implemented yet, note that expressions can't yet handle floating point values.")
         }
     }
 }

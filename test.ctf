@@ -1,5 +1,3 @@
-num as u64
-
 const globalthing: u32 = 21 + 3 * 2;
 
 fn main() -> u32 {
@@ -13,6 +11,6 @@ fn main() -> u32 {
 }
 
 fn _start() {
-    let status: u32 = main();
-    asm("mov rax, 60\nsyscall" : "edi" | status : :);
+    let status: u64 = main() as u64;
+    asm("mov rax, 60\nsyscall" : "rdi" | status : :);
 }
