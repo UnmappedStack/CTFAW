@@ -13,13 +13,14 @@ mod optimisation;
 mod backend;
 mod error;
 
-#[derive(Debug, Default)]
-struct Flags {
-    run: bool, // -r
-    just_asm: bool, // -S
-    just_obj: bool, // -c
-    outfile_set: bool,
-    out_file: String, // -o <filename>
+#[derive(Debug, Default, Clone)]
+pub struct Flags {
+    pub run: bool, // -r
+    pub just_asm: bool, // -S
+    pub just_obj: bool, // -c
+    pub include_comments: bool, // --asm-comments
+    pub outfile_set: bool,
+    pub out_file: String, // -o <filename>
 }
 
 fn check_flags_allowed(flags: &Flags) -> bool {
@@ -56,6 +57,7 @@ fn main() {
                 "-r" => flags.run = true,
                 "-S" => flags.just_asm = true,
                 "-c" => flags.just_obj = true,
+                "--asm-comments" => flags.include_comments = true,
                 "-o" => {
                     flags.outfile_set = true;
                     flags.out_file = iter.next().expect("Expected filename after -o, got end of command.").to_string();
@@ -80,7 +82,7 @@ fn main() {
     let mut global_vars = Vec::new();
     let ir = parser::parse(tokens, &mut global_vars);
     typecheck::typecheck(&ir, &global_vars);
-    backend::compile(ir, global_vars);
+    backend::compile(ir, global_vars, flags.clone());
     
     if flags.just_asm {
         if flags.outfile_set { let _ = fs::rename("out.asm", flags.out_file); }
@@ -91,7 +93,7 @@ fn main() {
         .args(["-f", "elf64", "out.asm", "-g"])
         .status()
         .expect("Failed to run assembler");
-    //let _ = fs::remove_file("out.asm");
+    let _ = fs::remove_file("out.asm");
     if flags.just_obj {
         if flags.outfile_set { let _ = fs::rename("out.o", flags.out_file); }
         return
