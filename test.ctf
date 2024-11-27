@@ -1,3 +1,5 @@
+num as u64
+
 const globalthing: u32 = 21 + 3 * 2;
 
 fn main() -> u32 {

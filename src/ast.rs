@@ -9,6 +9,13 @@ use crate::optimisation;
 use crate::lexer::*;
 use crate::statements::*;
 
+
+#[derive(Debug, Clone)]
+pub struct Cast {
+    val: BranchChildVal,
+    typ: Type,
+}
+
 #[derive(Debug, Clone)]
 pub enum BranchChildVal {
     Branch(ASTBranch),
@@ -19,6 +26,7 @@ pub enum BranchChildVal {
     StrLit(String),
     Ref(String),
     Deref(String),
+    Cast(Box<Cast>),
     Fn(FuncCallStatement),
 }
 
@@ -106,7 +114,7 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
     let mut highest_priority_idx = 0;
     let mut max_priority = 0;
     let tokens_len = tokens.len();
-    for idx in 0..tokens_len {
+    for idx in 0..tokens_len - 1 {
         if let TokenVal::Ops(op) = tokens[idx].val {
             let next = tokens[idx + 1].clone();
             if let TokenVal::Literal(l) = next.val {
@@ -184,18 +192,46 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
         _ => {}
     }
     let max_priority_idx = find_highest_priority_token(&mut tokens, priorities_map);
+    let max_priority_token = if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
+        max_priority_token
+    } else {
+        unreachable!()
+    };
     let left_branch = parse_branch(&tokens[..max_priority_idx], priorities_map);
+    if max_priority_token == Operation::As {
+        let result = Box::new(
+            BranchChild {
+                val: BranchChildVal::Cast(
+                    Box::new(Cast {
+                        val: left_branch.val,
+                        typ: {
+                            let iter = &mut tokens[max_priority_idx + 1..].iter();
+                            if let TokenVal::Type(mut t) = iter.next().unwrap().clone().val {
+                                for tok in &tokens[max_priority_idx + 2..] {
+                                    if tok.val != TokenVal::Ops(Operation::Star) {break}
+                                    t.ptr_depth += 1;
+                                }
+                                t
+                            } else {
+                                report_err(Component::PARSER, tokens[2].clone(), "Expected type after `as` in cast, got something else.");
+                                unreachable!();
+                            }
+                        }
+                    })
+                ),
+                row: tokens[max_priority_idx].row,
+                col: tokens[max_priority_idx].col,
+            }
+        );
+        return result
+    }
     let right_branch = parse_branch(&tokens[max_priority_idx + 1..], priorities_map);
     Box::new(
         BranchChild {
             val: BranchChildVal::Branch(
                 ASTBranch {
                     left_val: left_branch,
-                    op: if let TokenVal::Ops(max_priority_token) = tokens[max_priority_idx].val {
-                        max_priority_token
-                    } else {
-                        unreachable!()
-                    },
+                    op: max_priority_token,
                     right_val: right_branch,
                 }
             ),
@@ -210,11 +246,12 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
  * identifier. Returns an ASTNode which is the root of an AST for this expression. */
 pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
     let priorities_map: HashMap<Operation, u8> = HashMap::from([
-        (Operation::Pow, 1),
-        (Operation::Star, 2),
-        (Operation::Div, 2),
-        (Operation::Sub, 3),
-        (Operation::Add, 3),
+        (Operation::As, 1),
+        (Operation::Pow, 2),
+        (Operation::Star, 3),
+        (Operation::Div, 3),
+        (Operation::Sub, 4),
+        (Operation::Add, 4),
     ]);
     optimisation::fold_expr(*parse_branch(&tokens[..], &priorities_map))
 }
