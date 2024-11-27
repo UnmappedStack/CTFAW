@@ -48,7 +48,7 @@ You can also use the following options:
 - [X] Type checking
 - [X] Pointer types
 - [X] Use specified data sizes in generated assembly & proper stack alignation
-- [ ] Casting
+- [X] Casting
 - [ ] Externs & libc compatibility
 - [ ] Signed operations
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)
