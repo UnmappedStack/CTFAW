@@ -29,6 +29,8 @@ You can also use the following options:
 
 **-o filename** will tell the compiler to name the output file `filename`. 
 
+**--asm-comments** will add comments to the generated assembly to help make it more readable.
+
 ## Roadmap
 
 - [X] Lexer (tokenisation)
