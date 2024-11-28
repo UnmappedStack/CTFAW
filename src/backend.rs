@@ -290,10 +290,9 @@ pub fn compile_assign(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", loc.0, register_of_size("rax", loc.1)).as_str());
 }
 
-pub fn compile_return(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal, num_reg_args: usize) {
+pub fn compile_return(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal, num_reg_args: usize, stack_added: usize) {
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), ";; Early return from function");
     compile_expression(out, program, expr, allvars.clone(), globals.clone(), func.signature.ret_type); // this already puts it into rax
-    let stack_added = ((allvars.len() * 8) + 15) & !15;
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added + num_reg_args * 8).as_str());
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
@@ -352,6 +351,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 });
                 continue;
             }
+            num_reg_args += 1;
             all_vars.push(LocalVar {
                 ident: arg.val.clone(),
                 typ: arg.arg_type.clone(),
@@ -366,10 +366,10 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 });
             }
         }
-        let stack_added = (((all_vars.len() - num_reg_args) * 8) + 15) & !15;
+        let mut stack_added = (((all_vars.len() - num_reg_args) * 8) + 15) & !15;
+        if num_reg_args % 2 != 0 { stack_added += 8 }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", stack_added).as_str());
         for (i, arg) in val.signature.args.iter().enumerate() {
-            num_reg_args += 1;
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("push {}", REGS[i]).as_str());
         }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
@@ -381,7 +381,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 Statement::Define(v) => { compile_define(&mut out, &functab, v, all_vars.clone(), globals.clone()) },
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, &functab, v, all_vars.clone(), globals.clone()) },
-                Statement::Return(v) => { compile_return(&mut out, &functab, v, all_vars.clone(), globals.clone(), val.clone(), num_reg_args.clone()); has_early_ret = true; break },
+                Statement::Return(v) => { compile_return(&mut out, &functab, v, all_vars.clone(), globals.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()); has_early_ret = true; break },
                 _ => { panic!("Cannot compile this statement") }
             }
         };
