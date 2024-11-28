@@ -124,6 +124,9 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
     let rdx_sized = register_of_size("rdx", rettype.clone());
     let is_signed = check_type_signed(rettype);
     match op {
+        Operation::BitXor => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xor {}, {}", rax_sized, rdx_sized).as_str());
+        },
         Operation::Ampersand => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("and {}, {}", rax_sized, rdx_sized).as_str());
         },
