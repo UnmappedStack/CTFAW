@@ -9,7 +9,7 @@ use crate::error::*;
 use crate::ast::*;
 use crate::statements::*;
 
-fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, program: &HashMap<String, FuncTableVal>) -> Type {
+pub fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, program: &HashMap<String, FuncTableVal>) -> Type {
     match expr.val {
         BranchChildVal::Cast(v) => {
             typecheck_expr(v.val, vars, program);

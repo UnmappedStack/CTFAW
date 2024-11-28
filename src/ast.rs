@@ -14,6 +14,7 @@ use crate::statements::*;
 pub struct Cast {
     pub val: BranchChild,
     pub typ: Type,
+    pub original_type: Type,
 }
 
 #[derive(Debug, Clone)]
@@ -216,7 +217,8 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
                                 report_err(Component::PARSER, tokens[2].clone(), "Expected type after `as` in cast, got something else.");
                                 unreachable!();
                             }
-                        }
+                        },
+                        original_type: Type {val: TypeVal::Any, ptr_depth: 0},
                     })
                 ),
                 row: tokens[max_priority_idx].row,
