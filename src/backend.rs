@@ -27,7 +27,7 @@ pub struct CompiledAsm {
     flags: Flags,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LocalVar {
     ident: String,
     typ: Type,
@@ -243,6 +243,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("lea {}, {}", rax_sized, loc).as_str());
         },
         BranchChildVal::Ident(val) => {
+            println!("ident {} rettype: {:?}", val, rettype);
             let loc = get_var_loc(val, allvars, globals).0;
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, loc).as_str());
         },
@@ -277,7 +278,8 @@ pub fn compile_define(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
 }
 
 pub fn compile_assign(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, statement: AssignStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
-    let loc = get_var_loc(statement.identifier.clone(), allvars.clone(), globals.clone());
+    let mut loc = get_var_loc(statement.identifier.clone(), allvars.clone(), globals.clone());
+    if statement.deref {loc.1.ptr_depth -= 1}
     compile_expression(out, program, statement.expr, allvars.clone(), globals.clone(), loc.clone().1);
     if statement.deref {
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!(";; Assign value to var {}", statement.identifier).as_str());
@@ -288,10 +290,11 @@ pub fn compile_assign(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", loc.0, register_of_size("rax", loc.1)).as_str());
 }
 
-pub fn compile_return(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal) {
+pub fn compile_return(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal, num_reg_args: usize) {
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), ";; Early return from function");
     compile_expression(out, program, expr, allvars.clone(), globals.clone(), func.signature.ret_type); // this already puts it into rax
-    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", ((allvars.len() * 8) + 15) & !15).as_str());
+    let stack_added = ((allvars.len() * 8) + 15) & !15;
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added + num_reg_args * 8).as_str());
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
 }
@@ -339,14 +342,21 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
         }
         out.spaces.push_str("  ");
         let mut all_vars = Vec::new();
+        let mut fn_args = Vec::new();
+        let mut num_reg_args = 0;
         for (i, arg) in val.signature.args.iter().enumerate() {
-            assert!(i < 6, "Function calls with more than 6 args are not yet allowed.");
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("push {}", REGS[i]).as_str());
+            if i >= 6 {
+                fn_args.push(LocalVar {
+                    ident: arg.val.clone(),
+                    typ: arg.arg_type.clone(),
+                });
+                continue;
+            }
             all_vars.push(LocalVar {
                 ident: arg.val.clone(),
                 typ: arg.arg_type.clone(),
             });
-        }
+        } 
         // init local vars
         for statement in &val.statements {
             if let Statement::Define(s) = statement {
@@ -356,7 +366,12 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 });
             }
         }
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", ((all_vars.len() * 8) + 15) & !15).as_str());
+        let stack_added = (((all_vars.len() - num_reg_args) * 8) + 15) & !15;
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", stack_added).as_str());
+        for (i, arg) in val.signature.args.iter().enumerate() {
+            num_reg_args += 1;
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("push {}", REGS[i]).as_str());
+        }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
         // now actually compile the statements
         let mut has_early_ret = false;
@@ -366,12 +381,12 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 Statement::Define(v) => { compile_define(&mut out, &functab, v, all_vars.clone(), globals.clone()) },
                 Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone(), globals.clone()) },
                 Statement::FuncCall(v) => { compile_func_call(&mut out, &functab, v, all_vars.clone(), globals.clone()) },
-                Statement::Return(v) => { compile_return(&mut out, &functab, v, all_vars.clone(), globals.clone(), val.clone()); has_early_ret = true; break },
+                Statement::Return(v) => { compile_return(&mut out, &functab, v, all_vars.clone(), globals.clone(), val.clone(), num_reg_args.clone()); has_early_ret = true; break },
                 _ => { panic!("Cannot compile this statement") }
             }
         };
         if has_early_ret { continue }
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", ((all_vars.len() * 8) + 15) & !15).as_str());
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added + num_reg_args * 16).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");

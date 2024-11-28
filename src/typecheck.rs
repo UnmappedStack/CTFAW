@@ -85,6 +85,9 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
         for global in globals {
             local_vars.insert(global.identifier.clone(), global.typ.clone());
         }
+        for arg in entry.1.signature.args.clone() {
+            local_vars.insert(arg.val, arg.arg_type);
+        }
         let statements = &entry.1.statements;
         for statement in statements {
             match statement {
@@ -93,13 +96,14 @@ pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVa
                     local_vars.insert(s.identifier.clone(), s.def_type.clone());
                 },
                 Statement::Assign(s) => {
-                    let ret_type = match local_vars.get(s.identifier.as_str()) {
-                        Some(v) => v,
+                    let mut ret_type = match local_vars.get(s.identifier.as_str()) {
+                        Some(v) => v.clone(),
                         None => {
                             report_err(Component::ANALYSIS, s.ident_tok.clone(), format!("Undefined variable: {}", s.identifier).as_str());
                             unreachable!();
                         }
                     };
+                    if s.deref { ret_type.ptr_depth -= 1 }
                     typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false, program);
                     let mut s_copy = s.clone();
                     s_copy.typ = ret_type.clone();
