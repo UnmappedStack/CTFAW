@@ -119,51 +119,56 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>) -> (St
     }
 }
 
-/* Operands are in rax and rdx, and returns in rax. */
+/* Operands are in rax and rcx, and returns in rax. */
 fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
     let rax_sized = register_of_size("rax", rettype.clone());
-    let rdx_sized = register_of_size("rdx", rettype.clone());
-    let is_signed = check_type_signed(rettype);
+    let rcx_sized = register_of_size("rcx", rettype.clone());
+    let is_signed = check_type_signed(rettype.clone());
     match op {
+        Operation::Mod => {
+            let op = if is_signed { "idiv" } else { "div" };
+            let rdx_sized = register_of_size("rdx", rettype.clone());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xchg {}, {}\n{} {}\nmov {}, {}", rax_sized, rcx_sized, op, rcx_sized, rax_sized, rdx_sized).as_str());
+        },
         Operation::And => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, rdx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, rcx");
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
         },
         Operation::Or => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "or rax, rdx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "or rax, rcx");
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
         },
         Operation::BitXor => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xor {}, {}", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xor {}, {}", rax_sized, rcx_sized).as_str());
         },
         Operation::Ampersand => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("and {}, {}", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("and {}, {}", rax_sized, rcx_sized).as_str());
         },
         Operation::BitOr => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("or {}, {}", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("or {}, {}", rax_sized, rcx_sized).as_str());
         },
         Operation::LeftShift => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}\nshl {}, cl", rdx_sized, rax_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}\nshl {}, cl", rcx_sized, rax_sized).as_str());
         },
         Operation::RightShift => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}\nshr {}, cl", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}\nshr {}, cl", rax_sized, rcx_sized).as_str());
         },
         Operation::Star => {
             let op = if is_signed { "imul" } else { "mul" };
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} {}", op, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} {}", op, rcx_sized).as_str());
         },
         Operation::Add => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add {}, {}", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add {}, {}", rax_sized, rcx_sized).as_str());
         },
         Operation::Sub => {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub {}, {}", rdx_sized, rax_sized).as_str());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub {}, {}", rcx_sized, rax_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, rcx_sized).as_str());
         },
         Operation::Div => {
             let op = if is_signed { "idiv" } else { "div" };
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} {}", op, rdx_sized).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xchg {}, {}\n{} {}", rax_sized, rcx_sized, op, rcx_sized).as_str());
         },
         _ => {
             panic!("Unsupported operation.")
@@ -201,7 +206,7 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             compile_ast_branch(out, program, *val.left_val, allvars.clone(), globals.clone(), rettype.clone());
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "push rax");
             compile_ast_branch(out, program, *val.right_val, allvars, globals, rettype.clone());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rdx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rcx");
             compile_operation(out, val.op, rettype);
         },
         BranchChildVal::Cast(val) => {
@@ -214,9 +219,9 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             let new_size      = type_to_size(val.typ.clone());
             if (new_size > original_size) && (check_type_signed(original_type.clone()) && check_type_signed(val.typ.clone())) {
                 let original_rax_sized = register_of_size("rax", original_type.clone());
-                let rdx_sized = register_of_size("rdx", original_type);
-                write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rdx_sized, original_rax_sized).as_str());
-                write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("movsx {}, {}", rax_sized, rdx_sized).as_str());
+                let rcx_sized = register_of_size("rcx", original_type);
+                write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rcx_sized, original_rax_sized).as_str());
+                write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("movsx {}, {}", rax_sized, rcx_sized).as_str());
 
             }
         },
@@ -276,8 +281,8 @@ pub fn compile_assign(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
     compile_expression(out, program, statement.expr, allvars.clone(), globals.clone(), loc.clone().1);
     if statement.deref {
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!(";; Assign value to var {}", statement.identifier).as_str());
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rdx, {}", loc.0).as_str());
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov [rdx], {}", register_of_size("rax", loc.1)).as_str());
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}", loc.0).as_str());
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov [rcx], {}", register_of_size("rax", loc.1)).as_str());
         return
     }
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", loc.0, register_of_size("rax", loc.1)).as_str());

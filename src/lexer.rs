@@ -6,7 +6,7 @@ use crate::error::*;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Operation {
-    Add, Sub, Div, Pow, Star, As, Ampersand,
+    Add, Mod, Sub, Div, Pow, Star, As, Ampersand,
     BitOr, BitNot, LeftShift, RightShift, BitXor,
     And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ, NotEqu,
 }
@@ -146,6 +146,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
             ':' => tokens.push(Token::new(TokenVal::Colon, row, col)),
             ',' => tokens.push(Token::new(TokenVal::Comma, row, col)),
             '+' => tokens.push(Token::new(TokenVal::Ops(Operation::Add), row, col)),
+            '%' => tokens.push(Token::new(TokenVal::Ops(Operation::Mod), row, col)),
             '(' => tokens.push(Token::new(TokenVal::Lparen, row, col)),
             ')' => tokens.push(Token::new(TokenVal::Rparen, row, col)),
             '^' => tokens.push(Token::new(TokenVal::Ops(Operation::BitXor), row, col)),
