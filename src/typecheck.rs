@@ -31,14 +31,12 @@ pub fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, progr
         BranchChildVal::StrLit(_) => Type {val: TypeVal::Char, ptr_depth: 1},
         BranchChildVal::Float(_) => Type {val: TypeVal::F64, ptr_depth: 0},
         BranchChildVal::Char(_) => Type {val: TypeVal::Char, ptr_depth: 0},
-        BranchChildVal::Ident(ref mut s) | BranchChildVal::Ref(ref mut s) | BranchChildVal::Deref(ref mut s) => {
+        BranchChildVal::Ident(ref mut s) | BranchChildVal::Ref(ref mut s) => {
             let ret_type = match vars.get(s.as_str()) {
                 Some(v) => {
                     let mut vc = v.clone();
                     if let BranchChildVal::Ref(_) = expr.val {
                         vc.ptr_depth += 1;
-                    } else if let BranchChildVal::Deref(_) = expr.val {
-                        vc.ptr_depth -= 1;
                     }
                     vc
                 },
@@ -49,6 +47,11 @@ pub fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, progr
             };
             ret_type.clone()
         },
+        BranchChildVal::Deref(ref mut s) => {
+            let mut typ = typecheck_expr(*s.clone(), vars, program);
+            typ.ptr_depth -= 1;
+            typ
+        }
         BranchChildVal::Fn(f) => {
             match program.get(&f.fn_ident) {
                 Some(func) => {

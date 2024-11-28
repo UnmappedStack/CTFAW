@@ -192,8 +192,11 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, val).as_str());
         },
         BranchChildVal::Deref(val) => {
-            let loc = get_var_loc(val, allvars, globals).0;
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rax, [{}]\nmov {}, [{}]", loc, rax_sized, rax_sized).as_str());
+            let allvars_hash: HashMap<String, Type> = allvars.clone().into_iter()
+                    .map(|var| (var.ident, var.typ))
+                    .collect();
+            compile_ast_branch(out, program, *val.clone(), allvars.clone(), globals.clone(), typecheck_expr(*val.clone(), &allvars_hash, program));
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, [{}]", rax_sized, rax_sized).as_str());
         },
         BranchChildVal::Ref(val) => {
             let loc = get_var_loc(val, allvars, globals).0;
