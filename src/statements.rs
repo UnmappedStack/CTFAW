@@ -175,7 +175,7 @@ pub fn parse_inline_asm_statement(tokens: Vec<Token>) -> Statement {
     let mut io: Vec<Vec<AsmIOEntry>> = Vec::from([Vec::from([]), Vec::from([])]);
     for t in 0..2 {
         for i in 0..io_split[t].len() {
-            assert_report(io_split[t][i][1].val == TokenVal::BitOr, Component::PARSER, io_split[t][i][1].clone(), "Expected | in inline assembly input/output between register name and identifier, got other value.");
+            assert_report(io_split[t][i][1].val == TokenVal::Ops(Operation::BitOr), Component::PARSER, io_split[t][i][1].clone(), "Expected | in inline assembly input/output between register name and identifier, got other value.");
             let register = get_str(&io_split[t][i][0]);
             let identifier = get_ident(&io_split[t][i][2]);
             io[t].push(AsmIOEntry {

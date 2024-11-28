@@ -121,7 +121,7 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
             if let TokenVal::Literal(l) = next.val {
                 if let LitVal::Ident(v) = l.val {
                     if (idx == 0 || !is_val(tokens[idx - 1].val.clone())) &&
-                        (tokens[idx].val == TokenVal::Ampersand || tokens[idx].val == TokenVal::Ops(Operation::Star)) { continue };
+                        (tokens[idx].val == TokenVal::Ops(Operation::Ampersand) || tokens[idx].val == TokenVal::Ops(Operation::Star)) { continue };
                 }
             }
             if token_in_brackets(idx as u64, tokens) { continue };
@@ -144,7 +144,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
     if tokens_len == 2 {
         let ident = get_ident(&tokens[1]);
         match tokens[0].val {
-            TokenVal::Ampersand => return Box::new(BranchChild {val: BranchChildVal::Ref(ident), row: tokens[0].row, col: tokens[0].col}),
+            TokenVal::Ops(Operation::Ampersand) => return Box::new(BranchChild {val: BranchChildVal::Ref(ident), row: tokens[0].row, col: tokens[0].col}),
             TokenVal::Ops(Operation::Star) => return Box::new(BranchChild {val: BranchChildVal::Deref(ident), row: tokens[0].row, col: tokens[0].col}),
             _ => {
                 report_err(Component::PARSER, tokens[0].clone(), "Unknown unary operation in expression.");
@@ -254,6 +254,9 @@ pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
         (Operation::Div, 3),
         (Operation::Sub, 4),
         (Operation::Add, 4),
+        (Operation::Ampersand, 5),
+        (Operation::LeftShift, 6),
+        (Operation::RightShift, 6),
     ]);
     optimisation::fold_expr(*parse_branch(&tokens[..], &priorities_map))
 }

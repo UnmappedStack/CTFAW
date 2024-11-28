@@ -6,7 +6,8 @@ use crate::error::*;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Operation {
-    Add, Sub, Div, Pow, Star, As,
+    Add, Sub, Div, Pow, Star, As, Ampersand,
+    BitOr, BitNot, LeftShift, RightShift, BitXor,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -56,9 +57,6 @@ pub enum TokenVal {
     // Mathematical operators
     Ops(Operation), Lparen, Rparen, Arrow,
     
-    // Bitwise operators
-    BitOr, BitNot, LeftShift, RightShift,
-
     // Logical operators
     And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
 
@@ -69,7 +67,7 @@ pub enum TokenVal {
     Let, Const, If, Else, ElseIf, Func, While, Return,
 
     // Other
-    Ampersand, Comma, Colon, Lbrace, Rbrace, Endln, Assign
+    Comma, Colon, Lbrace, Rbrace, Endln, Assign
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -152,8 +150,8 @@ pub fn lex(txt: &str) -> Vec<Token> {
             '+' => tokens.push(Token::new(TokenVal::Ops(Operation::Add), row, col)),
             '(' => tokens.push(Token::new(TokenVal::Lparen, row, col)),
             ')' => tokens.push(Token::new(TokenVal::Rparen, row, col)),
-            '^' => tokens.push(Token::new(TokenVal::Ops(Operation::Pow), row, col)),
-            '~' => tokens.push(Token::new(TokenVal::BitNot, row, col)),
+            '^' => tokens.push(Token::new(TokenVal::Ops(Operation::BitXor), row, col)),
+            '~' => tokens.push(Token::new(TokenVal::Ops(Operation::BitNot), row, col)),
             '!' => tokens.push(Token::new(TokenVal::Not, row, col)),
             ';' => tokens.push(Token::new(TokenVal::Endln, row, col)),
             '{' => tokens.push(Token::new(TokenVal::Lbrace, row, col)),
@@ -174,7 +172,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
             '&' => {
                 match next {
                     '&' => {tokens.push(Token::new(TokenVal::And, row, col)); iter.next(); c += 1; col += 1; }
-                    _ => tokens.push(Token::new(TokenVal::Ampersand, row, col)), // could be deref *or* bitwise AND. That's for the parser to work out.
+                    _ => tokens.push(Token::new(TokenVal::Ops(Operation::Ampersand), row, col)), // could be deref *or* bitwise AND. That's for the parser to work out.
                 }
             },
             '*' => {
@@ -186,19 +184,19 @@ pub fn lex(txt: &str) -> Vec<Token> {
             '|' => {
                 match next {
                     '|' => {tokens.push(Token::new(TokenVal::Or, row, col)); iter.next(); c += 1; col += 1; }
-                    _ => tokens.push(Token::new(TokenVal::BitOr, row, col)),
+                    _ => tokens.push(Token::new(TokenVal::Ops(Operation::BitOr), row, col)),
                 }
             },
             '>' => {
                 match next {
-                    '>' => {tokens.push(Token::new(TokenVal::RightShift, row, col)); iter.next(); c += 1; col += 1; }
+                    '>' => {tokens.push(Token::new(TokenVal::Ops(Operation::RightShift), row, col)); iter.next(); c += 1; col += 1; }
                     '=' => {tokens.push(Token::new(TokenVal::GreaterEqu, row, col)); iter.next(); c += 1; col += 1; }
                     _ => tokens.push(Token::new(TokenVal::Greater, row, col)),
                 }
             },
             '<' => {
                 match next {
-                    '<' => {tokens.push(Token::new(TokenVal::LeftShift, row, col)); iter.next(); c += 1; col += 1; }
+                    '<' => {tokens.push(Token::new(TokenVal::Ops(Operation::LeftShift), row, col)); iter.next(); c += 1; col += 1; }
                     '=' => {tokens.push(Token::new(TokenVal::LessEqu, row, col)); iter.next(); c += 1; col += 1; }
                     _ => tokens.push(Token::new(TokenVal::Less, row, col)),
                 }
