@@ -8,6 +8,7 @@ use crate::error::*;
 pub enum Operation {
     Add, Sub, Div, Pow, Star, As, Ampersand,
     BitOr, BitNot, LeftShift, RightShift, BitXor,
+    And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ, NotEqu,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -57,9 +58,6 @@ pub enum TokenVal {
     // Mathematical operators
     Ops(Operation), Lparen, Rparen, Arrow,
     
-    // Logical operators
-    And, Or, Not, Greater, Less, GreaterEqu, LessEqu, Equ,
-
     Literal(Literal),
     Type(Type),
 
@@ -152,7 +150,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
             ')' => tokens.push(Token::new(TokenVal::Rparen, row, col)),
             '^' => tokens.push(Token::new(TokenVal::Ops(Operation::BitXor), row, col)),
             '~' => tokens.push(Token::new(TokenVal::Ops(Operation::BitNot), row, col)),
-            '!' => tokens.push(Token::new(TokenVal::Not, row, col)),
+            '!' => tokens.push(Token::new(TokenVal::Ops(Operation::Not), row, col)),
             ';' => tokens.push(Token::new(TokenVal::Endln, row, col)),
             '{' => tokens.push(Token::new(TokenVal::Lbrace, row, col)),
             '}' => tokens.push(Token::new(TokenVal::Rbrace, row, col)),
@@ -165,13 +163,13 @@ pub fn lex(txt: &str) -> Vec<Token> {
             },
             '=' => {
                 match next {
-                    '=' => {tokens.push(Token::new(TokenVal::Equ, row, col)); iter.next(); c += 1; col += 1; }
+                    '=' => {tokens.push(Token::new(TokenVal::Ops(Operation::Equ), row, col)); iter.next(); c += 1; col += 1; }
                     _ => tokens.push(Token::new(TokenVal::Assign, row, col)),
                 }
             },
             '&' => {
                 match next {
-                    '&' => {tokens.push(Token::new(TokenVal::And, row, col)); iter.next(); c += 1; col += 1; }
+                    '&' => {tokens.push(Token::new(TokenVal::Ops(Operation::And), row, col)); iter.next(); c += 1; col += 1; }
                     _ => tokens.push(Token::new(TokenVal::Ops(Operation::Ampersand), row, col)), // could be deref *or* bitwise AND. That's for the parser to work out.
                 }
             },
@@ -183,22 +181,22 @@ pub fn lex(txt: &str) -> Vec<Token> {
             },
             '|' => {
                 match next {
-                    '|' => {tokens.push(Token::new(TokenVal::Or, row, col)); iter.next(); c += 1; col += 1; }
+                    '|' => {tokens.push(Token::new(TokenVal::Ops(Operation::Or), row, col)); iter.next(); c += 1; col += 1; }
                     _ => tokens.push(Token::new(TokenVal::Ops(Operation::BitOr), row, col)),
                 }
             },
             '>' => {
                 match next {
                     '>' => {tokens.push(Token::new(TokenVal::Ops(Operation::RightShift), row, col)); iter.next(); c += 1; col += 1; }
-                    '=' => {tokens.push(Token::new(TokenVal::GreaterEqu, row, col)); iter.next(); c += 1; col += 1; }
-                    _ => tokens.push(Token::new(TokenVal::Greater, row, col)),
+                    '=' => {tokens.push(Token::new(TokenVal::Ops(Operation::GreaterEqu), row, col)); iter.next(); c += 1; col += 1; }
+                    _ => tokens.push(Token::new(TokenVal::Ops(Operation::Greater), row, col)),
                 }
             },
             '<' => {
                 match next {
                     '<' => {tokens.push(Token::new(TokenVal::Ops(Operation::LeftShift), row, col)); iter.next(); c += 1; col += 1; }
-                    '=' => {tokens.push(Token::new(TokenVal::LessEqu, row, col)); iter.next(); c += 1; col += 1; }
-                    _ => tokens.push(Token::new(TokenVal::Less, row, col)),
+                    '=' => {tokens.push(Token::new(TokenVal::Ops(Operation::LessEqu), row, col)); iter.next(); c += 1; col += 1; }
+                    _ => tokens.push(Token::new(TokenVal::Ops(Operation::Less), row, col)),
                 }
             },
             // comment and division symbol handling

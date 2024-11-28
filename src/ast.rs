@@ -130,6 +130,7 @@ fn find_highest_priority_token(tokens: &mut &[Token], priorities: &HashMap<Opera
                     if (idx == 0 || !is_val(tokens[idx - 1].val.clone())) &&
                         (tokens[idx].val == TokenVal::Ops(Operation::Ampersand) ||
                             tokens[idx].val == TokenVal::Ops(Operation::Star) ||
+                            tokens[idx].val == TokenVal::Ops(Operation::Not) ||
                             tokens[idx].val == TokenVal::Ops(Operation::BitNot)) { continue };
                 }
             }
@@ -156,6 +157,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
             TokenVal::Ops(Operation::Ampersand) => return Box::new(BranchChild {val: BranchChildVal::Ref(get_ident(&tokens[1])), row: tokens[0].row, col: tokens[0].col}),
             TokenVal::Ops(Operation::Star) => return Box::new(BranchChild {val: BranchChildVal::Deref(parse_branch(&tokens[1..], priorities_map)), row: tokens[0].row, col: tokens[0].col}),
             TokenVal::Ops(Operation::BitNot) => return Box::new(BranchChild {val: BranchChildVal::Unary(UnaryOp {op: Operation::BitNot, val: parse_branch(&tokens[1..], priorities_map)}), row: tokens[0].row, col: tokens[0].col}),
+            TokenVal::Ops(Operation::Not) => return Box::new(BranchChild {val: BranchChildVal::Unary(UnaryOp {op: Operation::Not, val: parse_branch(&tokens[1..], priorities_map)}), row: tokens[0].row, col: tokens[0].col}),
             _ => {
                 report_err(Component::PARSER, tokens[0].clone(), "Unknown unary operation in expression.");
                 return Box::new(BranchChild {val: BranchChildVal::Int(0), row: tokens[0].row, col: tokens[0].col});
@@ -259,16 +261,18 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
 pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
     let priorities_map: HashMap<Operation, u8> = HashMap::from([
         (Operation::As, 1),
-        (Operation::Pow, 2),
-        (Operation::Star, 3),
-        (Operation::Div, 3),
-        (Operation::Sub, 4),
-        (Operation::Add, 4),
-        (Operation::Ampersand, 5),
-        (Operation::BitXor, 5),
-        (Operation::BitOr, 5),
-        (Operation::LeftShift, 6),
-        (Operation::RightShift, 6),
+        (Operation::And, 2),
+        (Operation::Or, 2),
+        (Operation::Pow, 4),
+        (Operation::Star, 5),
+        (Operation::Div, 5),
+        (Operation::Sub, 6),
+        (Operation::Add, 6),
+        (Operation::Ampersand, 7),
+        (Operation::BitXor, 7),
+        (Operation::BitOr, 7),
+        (Operation::LeftShift, 8),
+        (Operation::RightShift, 8),
     ]);
     optimisation::fold_expr(*parse_branch(&tokens[..], &priorities_map))
 }

@@ -23,6 +23,7 @@ pub struct CompiledAsm {
     string_literals: Vec<String>,
     num_strings: usize,
     spaces: String,
+    num_subroutines: u64, // NOTE: This isn't referring to functions!
     flags: Flags,
 }
 
@@ -124,6 +125,16 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
     let rdx_sized = register_of_size("rdx", rettype.clone());
     let is_signed = check_type_signed(rettype);
     match op {
+        Operation::And => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, rdx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::Or => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "or rax, rdx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
         Operation::BitXor => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xor {}, {}", rax_sized, rdx_sized).as_str());
         },
@@ -165,6 +176,11 @@ fn compile_union_operation(out: &mut CompiledAsm, program: &HashMap<String, Func
     match operation.op {
         Operation::BitNot => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("not {}", rax_sized).as_str());
+        },
+        Operation::Not => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "test rax, rax");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, 1");
         },
         _ => {
             panic!("Unary operator not implemented yet.");
@@ -309,7 +325,7 @@ pub fn compile_func_call(out: &mut CompiledAsm, program: &HashMap<String, FuncTa
 }
 
 pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, flags: Flags) {
-    let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), flags };
+    let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), num_subroutines: 0, flags };
     for (key, val) in (&functab).into_iter() {
         out.spaces.clear();
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("\n{}: push rbp", key).as_str());
