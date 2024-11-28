@@ -157,10 +157,26 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
     }
 }
 
+fn compile_union_operation(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, operation: UnaryOp, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, rettype: Type) {
+    let rax_sized = register_of_size("rax", rettype.clone());
+    match operation.op {
+        Operation::BitNot => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("not {}", rax_sized).as_str());
+        },
+        _ => {
+            panic!("Unary operator not implemented yet.");
+        }
+    }
+}
+
 /* The result of a single AST branch is stored in RAX. */
 fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, branch: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, rettype: Type) {
     let rax_sized = register_of_size("rax", rettype.clone());
     match branch.val {
+        BranchChildVal::Unary(val) => {
+            compile_ast_branch(out, program, *val.val.clone(), allvars.clone(), globals.clone(), rettype.clone());
+            compile_union_operation(out, program, val, allvars, globals, rettype.clone());
+        }
         BranchChildVal::Branch(val) => {
             // compile it as a branch
             compile_ast_branch(out, program, *val.left_val, allvars.clone(), globals.clone(), rettype.clone());

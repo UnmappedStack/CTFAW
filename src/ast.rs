@@ -155,6 +155,7 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
         match tokens[0].val {
             TokenVal::Ops(Operation::Ampersand) => return Box::new(BranchChild {val: BranchChildVal::Ref(get_ident(&tokens[1])), row: tokens[0].row, col: tokens[0].col}),
             TokenVal::Ops(Operation::Star) => return Box::new(BranchChild {val: BranchChildVal::Deref(parse_branch(&tokens[1..], priorities_map)), row: tokens[0].row, col: tokens[0].col}),
+            TokenVal::Ops(Operation::BitNot) => return Box::new(BranchChild {val: BranchChildVal::Unary(UnaryOp {op: Operation::BitNot, val: parse_branch(&tokens[1..], priorities_map)}), row: tokens[0].row, col: tokens[0].col}),
             _ => {
                 report_err(Component::PARSER, tokens[0].clone(), "Unknown unary operation in expression.");
                 return Box::new(BranchChild {val: BranchChildVal::Int(0), row: tokens[0].row, col: tokens[0].col});
