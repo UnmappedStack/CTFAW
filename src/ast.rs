@@ -266,6 +266,7 @@ pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
         (Operation::Add, 4),
         (Operation::Ampersand, 5),
         (Operation::BitXor, 5),
+        (Operation::BitOr, 5),
         (Operation::LeftShift, 6),
         (Operation::RightShift, 6),
     ]);

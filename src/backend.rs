@@ -130,6 +130,9 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
         Operation::Ampersand => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("and {}, {}", rax_sized, rdx_sized).as_str());
         },
+        Operation::BitOr => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("or {}, {}", rax_sized, rdx_sized).as_str());
+        },
         Operation::LeftShift => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov rcx, {}\nshl {}, cl", rdx_sized, rax_sized).as_str());
         },

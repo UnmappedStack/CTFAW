@@ -11,6 +11,7 @@ fn main() -> u32 {
 }
 
 fn _start() {
-    let status: u64 = main() as u64;
+//    let status: u64 = main() as u64;
+    let status: u64 = 1 | 2;
     asm("mov rax, 60\nsyscall" : "rdi" | status : :);
 }

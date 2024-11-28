@@ -51,10 +51,10 @@ You can also use the following options:
 - [X] Pointer types
 - [X] Use specified data sizes in generated assembly & proper stack alignation
 - [X] Casting
+- [X] Bitwise operations (`>>`/`<<`, `|`, `&`, `^`, `~`, etc.)
 - [ ] Externs & libc compatibility
 - [ ] Signed operations
 - [ ] Logical operations (`&&`, `||`, `!`, etc.)
-- [ ] Bitwise operations (`>>`/`<<`, `|`, `&`, `~`, etc.)
 - [ ] Arrays
 - [ ] Logical blocks
     - [ ] If
