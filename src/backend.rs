@@ -326,14 +326,11 @@ pub fn compile_inline_asm(out: &mut CompiledAsm, statement: InlineAsmStatement, 
 
 pub fn compile_func_call(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, statement: FuncCallStatement, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>) {
     for arg in 0..statement.args.len() {
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "push rax");
         compile_expression(out, program, statement.args[arg].clone(), allvars.clone(), globals.clone(), Type {val: TypeVal::U64, ptr_depth: 0});
         if arg < 6 {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, rax", REGS[arg]).as_str());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("pop rax").as_str());
         } else {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov r15, rax").as_str());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("pop rax").as_str());
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("push r15").as_str());
         }
     }
