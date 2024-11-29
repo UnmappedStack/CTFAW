@@ -118,13 +118,13 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
                 if num_open_lparens == 0 { break }
                 continue;
             }
-            let identifier = get_ident(&tokens_whole[i + 3]);
+            let identifier = get_ident(&tokens_whole[offset - 2]);
             offset += 2;
-            assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[i + 4].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
+            assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[offset - 2].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
             let argtype = if let TokenVal::Type(v) = decl_iter.next().unwrap().clone() {
                 v
             } else {
-                report_err(Component::PARSER, tokens_whole[i + 5].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
+                report_err(Component::PARSER, tokens_whole[offset - 1].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
                 unreachable!();
             };
             args.push(FuncArg {

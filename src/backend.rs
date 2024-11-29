@@ -243,7 +243,6 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("lea {}, {}", rax_sized, loc).as_str());
         },
         BranchChildVal::Ident(val) => {
-            println!("ident {} rettype: {:?}", val, rettype);
             let loc = get_var_loc(val, allvars, globals).0;
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, loc).as_str());
         },
@@ -293,7 +292,7 @@ pub fn compile_assign(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
 pub fn compile_return(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, expr: BranchChild, allvars: Vec<LocalVar>, globals: Vec<GlobalVar>, func: FuncTableVal, num_reg_args: usize, stack_added: usize) {
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), ";; Early return from function");
     compile_expression(out, program, expr, allvars.clone(), globals.clone(), func.signature.ret_type); // this already puts it into rax
-    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added + num_reg_args * 8).as_str());
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added).as_str());
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
 }
@@ -341,22 +340,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
         }
         out.spaces.push_str("  ");
         let mut all_vars = Vec::new();
-        let mut fn_args = Vec::new();
-        let mut num_reg_args = 0;
-        for (i, arg) in val.signature.args.iter().enumerate() {
-            if i >= 6 {
-                fn_args.push(LocalVar {
-                    ident: arg.val.clone(),
-                    typ: arg.arg_type.clone(),
-                });
-                continue;
-            }
-            num_reg_args += 1;
-            all_vars.push(LocalVar {
-                ident: arg.val.clone(),
-                typ: arg.arg_type.clone(),
-            });
-        } 
+        let num_reg_args = 0; 
         // init local vars
         for statement in &val.statements {
             if let Statement::Define(s) = statement {
@@ -366,13 +350,19 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 });
             }
         }
-        let mut stack_added = (((all_vars.len() - num_reg_args) * 8) + 15) & !15;
-        if num_reg_args % 2 != 0 { stack_added += 8 }
+        let stack_added = (((all_vars.len() + val.signature.args.len()) * 8) + 15) & !15;
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", stack_added).as_str());
-        for (i, arg) in val.signature.args.iter().enumerate() {
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("push {}", REGS[i]).as_str());
-        }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
+        let mut reg_arg_off = 0;
+        for (i, arg) in val.signature.args.iter().enumerate() {
+            let sized_reg = register_of_size(REGS[i], arg.arg_type.clone());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rbp + {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
+            all_vars.insert(0, LocalVar {
+                ident: arg.val.clone(),
+                typ: arg.arg_type.clone()
+            });
+            reg_arg_off += type_to_size(arg.arg_type.clone());
+        }
         // now actually compile the statements
         let mut has_early_ret = false;
         for statement in val.statements.clone() {
@@ -386,7 +376,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             }
         };
         if has_early_ret { continue }
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added + num_reg_args * 16).as_str());
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "ret");
