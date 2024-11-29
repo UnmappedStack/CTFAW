@@ -6,7 +6,7 @@ fn main(to_add: u32) -> u32 {
     // write the text to stdout
     asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
     let num_addr: u32* = &num;
-    *num_addr = 41 + to_add;
+    *num_addr = 42 + to_add;
     return num + globalthing;
 }
 
