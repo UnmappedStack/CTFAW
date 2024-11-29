@@ -98,7 +98,9 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             assert_report(can_fold, Component::PARSER, tokens_whole[i + 1].clone(), "Global constants cannot contain identifiers, function calls, or anything besides numbers & operations.");
             let val = if let BranchChildVal::Int(v) = global_def_statement.clone().unwrap().expr.val { v } else { unreachable!() };
             global_vars.push(GlobalVar { identifier: global_def_statement.clone().unwrap().identifier, typ: global_def_statement.unwrap().def_type, val });
+            skip += n;
         }
+        println!("token = {:?}", token);
         if *token != TokenVal::Func { continue }
         // it's a function declaration indeed. Get the identifier.
         let identifier = get_ident(&tokens_whole[i + 1]);
@@ -168,7 +170,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             n += 1;
         }
         let statement_tokens = &tokens_whole[offset..offset + n];
-        skip = n + 1;
+        skip += n + offset - i;
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| e.val == TokenVal::Endln)
             .filter(|v| !v.is_empty())

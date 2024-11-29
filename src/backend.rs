@@ -54,6 +54,16 @@ fn check_type_signed(typ: Type) -> bool {
 
 // Takes a (64 bit) register and a type, outputs the corresponding register name of the right size
 fn register_of_size(original: &str, typ: Type) -> String {
+    if original.chars().nth(0).unwrap() == 'r' && original.chars().nth(1).unwrap().is_digit(10) {
+        let mut copy = String::from(original);
+        match type_to_size(typ) {
+            1 => copy.push('b'),
+            2 => copy.push('w'),
+            4 => copy.push('d'),
+            _ => {},
+        };
+        return copy
+    }
     match type_to_size(typ) {
         1 => {
             let mut copy = String::from(&original[1..]);
@@ -357,7 +367,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
         for (i, arg) in val.signature.args.iter().enumerate() {
             let sized_reg = register_of_size(REGS[i], arg.arg_type.clone());
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rbp + {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
-            all_vars.insert(0, LocalVar {
+            all_vars.insert(i, LocalVar {
                 ident: arg.val.clone(),
                 typ: arg.arg_type.clone()
             });
