@@ -407,6 +407,25 @@ fn compile_scope(out: &mut CompiledAsm, functab: HashMap<String, FuncTableVal>, 
     has_early_ret
 }
 
+fn get_local_vars(statements: &Vec<Statement>) -> Vec<LocalVar> {
+    let mut all_vars: Vec<LocalVar> = Vec::new();
+    for statement in statements {
+        match statement {
+            Statement::Define(s) => {
+                all_vars.push(LocalVar {
+                    ident: s.identifier.clone(),
+                    typ: s.def_type.clone(),
+                });
+            },
+            Statement::If(s) => {
+                all_vars.append(&mut get_local_vars(&s.body));
+            },
+            _ => {},
+        }
+    }
+    all_vars
+}
+
 pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, flags: Flags) {
     let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), num_subroutines: 0, flags };
     for (key, val) in (&functab).into_iter() {
@@ -416,18 +435,10 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             out.spaces.push_str(" ");
         }
         out.spaces.push_str("  ");
-        let mut all_vars = Vec::new();
         let mut stack_args = Vec::new();
         let num_reg_args = 0; 
         // init local vars
-        for statement in &val.statements {
-            if let Statement::Define(s) = statement {
-                all_vars.push(LocalVar {
-                    ident: s.identifier.clone(),
-                    typ: s.def_type.clone(),
-                });
-            }
-        }
+        let mut all_vars = get_local_vars(&val.statements);
         let num_reg_args = if val.signature.args.len() <= 6 { val.signature.args.len() } else { 6 };
         let stack_added = (((all_vars.len() + num_reg_args) * 8) + 15) & !15;
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
