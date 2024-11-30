@@ -151,11 +151,16 @@ pub fn lex(txt: &str) -> Vec<Token> {
             ')' => tokens.push(Token::new(TokenVal::Rparen, row, col)),
             '^' => tokens.push(Token::new(TokenVal::Ops(Operation::BitXor), row, col)),
             '~' => tokens.push(Token::new(TokenVal::Ops(Operation::BitNot), row, col)),
-            '!' => tokens.push(Token::new(TokenVal::Ops(Operation::Not), row, col)),
             ';' => tokens.push(Token::new(TokenVal::Endln, row, col)),
             '{' => tokens.push(Token::new(TokenVal::Lbrace, row, col)),
             '}' => tokens.push(Token::new(TokenVal::Rbrace, row, col)),
             // some less easy ones
+            '!' => {
+                match next {
+                    '=' => {tokens.push(Token::new(TokenVal::Arrow, row, col)); iter.next(); c += 1; col += 1; },
+                    _ => tokens.push(Token::new(TokenVal::Ops(Operation::Not), row, col)),
+                }
+            },
             '-' => {
                 match next {
                     '>' => {tokens.push(Token::new(TokenVal::Arrow, row, col)); iter.next(); c += 1; col += 1; }

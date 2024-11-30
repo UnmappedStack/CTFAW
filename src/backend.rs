@@ -151,6 +151,40 @@ fn compile_operation(out: &mut CompiledAsm, op: Operation, rettype: Type) {
             let rdx_sized = register_of_size("rdx", rettype.clone());
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("xchg {}, {}\n{} {}\nmov {}, {}", rax_sized, rcx_sized, op, rcx_sized, rax_sized, rdx_sized).as_str());
         },
+        Operation::GreaterEqu => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rcx, rax");
+            let op = if is_signed { "setge" } else { "setae" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} al", op).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::LessEqu => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rcx, rax");
+            let op = if is_signed { "setle" } else { "setbe" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} al", op).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::Less => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rcx, rax");
+            let op = if is_signed { "setl" } else { "setb" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} al", op).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::Greater => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rcx, rax");
+            let op = if is_signed { "setg" } else { "seta" };
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("{} al", op).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::NotEqu => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rax, rcx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
+        Operation::Equ => {
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "cmp rax, rcx");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setz al");
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, 1");
+        },
         Operation::And => {
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "and rax, rcx");
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "setnz al");

@@ -261,9 +261,15 @@ fn parse_branch(mut tokens: &[Token], priorities_map: &HashMap<Operation, u8>) -
  * identifier. Returns an ASTNode which is the root of an AST for this expression. */
 pub fn parse_expression_full(tokens: Vec<Token>) -> (bool, BranchChild) {
     let priorities_map: HashMap<Operation, u8> = HashMap::from([
-        (Operation::As, 1),
-        (Operation::And, 2),
-        (Operation::Or, 2),
+        (Operation::Equ, 1),
+        (Operation::NotEqu, 1),
+        (Operation::GreaterEqu, 1),
+        (Operation::LessEqu, 1),
+        (Operation::Greater, 1),
+        (Operation::Less, 1),
+        (Operation::As, 2),
+        (Operation::And, 3),
+        (Operation::Or, 3),
         (Operation::Pow, 4),
         (Operation::Star, 5),
         (Operation::Div, 5),
