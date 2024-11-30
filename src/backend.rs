@@ -116,7 +116,7 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_
             off += 8;
         }
         let ptr_type = ptr_ident_of_size(stack_args[val].typ.clone());
-        return (format!("{} [r10 + {}]", ptr_type, off), stack_args[val].typ.clone()) 
+        return (format!("{} [rsp + {}]", ptr_type, off), stack_args[val].typ.clone()) 
     }
 
     let local_pos = locals.iter().position(|s| s.ident == v);
@@ -124,8 +124,8 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_
         Some(val) => {
             let mut off = 0;
             for l in &locals {
-                if v == l.ident { break }
                 off += type_to_size(l.typ.clone());
+                if v == l.ident { break }
             }
             let ptr_type = ptr_ident_of_size(locals[val].typ.clone());
             (format!("{} [rbp - {}]", ptr_type, off), locals[val].typ.clone())
@@ -370,9 +370,8 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
         }
         let num_reg_args = if val.signature.args.len() <= 6 { val.signature.args.len() } else { 6 };
         let stack_added = (((all_vars.len() + num_reg_args) * 8) + 15) & !15;
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "lea r10, [rsp + 16]");
-        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", stack_added).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
+        write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("sub rsp, {}", stack_added).as_str());
         let mut reg_arg_off = 0;
         for (i, arg) in val.signature.args.iter().enumerate() {
             if i > 5 {
@@ -383,7 +382,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
                 continue;
             }
             let sized_reg = register_of_size(REGS[i], arg.arg_type.clone());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rbp + {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rsp + {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
             all_vars.insert(i, LocalVar {
                 ident: arg.val.clone(),
                 typ: arg.arg_type.clone()
