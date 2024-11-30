@@ -41,7 +41,47 @@ fn parse_scope(statement_tokens: &[Token]) -> Vec<Statement> {
     let mut this_statement_tokens = Vec::new();
     let mut statements = Vec::new();
     let mut tok_iter = statement_tokens.iter();
+    let mut y = 0;
     while let Some(this_tok) = tok_iter.next() {
+        y += 1;
+        if this_tok.val == TokenVal::If { // TODO: Add more cases for if, else, elseif, while, for, etc
+            let next_tok = tok_iter.next().unwrap();
+            assert_report(next_tok.val == TokenVal::Lparen, Component::PARSER, next_tok.clone(), "Expected left parenthesis ( after logical block statement (such as if/elseif/else/for/while), got something else.");
+            y += 2;
+            let mut condition_tokens = Vec::new();
+            let mut num_open_lparens = 1;
+            while let Some(this_tok) = tok_iter.next() {
+                y += 1;
+                if this_tok.val == TokenVal::Lparen { num_open_lparens += 1; }
+                if this_tok.val == TokenVal::Rparen {
+                    num_open_lparens -= 1;
+                    if num_open_lparens == 0 { break }
+                    continue;
+                }
+                condition_tokens.push(this_tok.clone());
+            }
+            let mut num_open_lbraces = 1;
+            let mut n = 0;
+            tok_iter.next();
+            while let Some(this_tok) = tok_iter.next() {
+                if this_tok.val == TokenVal::Lbrace { num_open_lbraces += 1; continue }
+                if this_tok.val == TokenVal::Rbrace {
+                    num_open_lbraces -= 1;
+                    if num_open_lbraces == 0 { break }
+                }
+                n += 1;
+            }
+            let inner_statement_tokens = &statement_tokens[y..y + n];
+            let statement_list = parse_scope(inner_statement_tokens);
+            let condition_tree = parse_expression(condition_tokens);
+            statements.push(Statement::If(
+                IfStatement {
+                    condition: condition_tree,
+                    body: statement_list,
+                }
+            ));
+            continue
+        }
         this_statement_tokens.push(this_tok.clone());
         if this_tok.val == TokenVal::Endln {
             statements.push(parse_statement(this_statement_tokens.clone()));
@@ -146,10 +186,11 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         let mut num_open_lbraces = 1;
         let mut n = 0;
         while let Some(this_token) = decl_iter.next() {
-            if *this_token == TokenVal::Lbrace { num_open_lbraces += 1; continue }
+            if *this_token == TokenVal::Lbrace { n += 1; num_open_lbraces += 1; continue }
             if *this_token == TokenVal::Rbrace {
                 num_open_lbraces -= 1;
                 if num_open_lbraces == 0 { break }
+                n += 1;
                 continue;
             }
             n += 1;

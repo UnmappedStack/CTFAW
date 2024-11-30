@@ -11,6 +11,12 @@ use crate::ast::*;
 // TODO: Add a generic assign statement used for both assigning existing vars and defining new ones
 
 #[derive(Debug, Clone)]
+pub struct IfStatement {
+    pub condition: BranchChild,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug, Clone)]
 pub struct DefineStatement {
     is_const: bool,
     pub identifier: String,
@@ -58,6 +64,7 @@ pub enum Statement {
     FuncCall(FuncCallStatement),
     InlineAsm(InlineAsmStatement),
     Return(BranchChild),
+    If(IfStatement),
     NullStatement, // NOTE: for debugging only, don't use in the actual compiler!
 }
 

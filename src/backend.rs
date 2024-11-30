@@ -382,6 +382,31 @@ pub fn compile_func_call(out: &mut CompiledAsm, program: &HashMap<String, FuncTa
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("call {}", statement.fn_ident).as_str());
 }
 
+fn compile_if_statement(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, statement: IfStatement, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) {
+    compile_expression(out, program, statement.condition, all_vars.clone(), globals.clone(), stack_args.clone(), Type {val: TypeVal::Boolean, ptr_depth: 0});
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("cmp al, 0\nje sect{}", out.num_subroutines).as_str());
+    compile_scope(out, program.clone(), all_vars, globals, stack_args, statement.body, val, num_reg_args, stack_added);
+    write_text(&mut out.text, String::new(), out.flags.clone(), format!("sect{}:", out.num_subroutines).as_str());
+    out.num_subroutines += 1;
+}
+
+// Returns whether or not there's an early return.
+fn compile_scope(out: &mut CompiledAsm, functab: HashMap<String, FuncTableVal>, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, statements: Vec<Statement>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) -> bool {
+    let mut has_early_ret = false;
+    for statement in statements {
+        match statement {
+            Statement::Assign(v) => { compile_assign(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
+            Statement::Define(v) => { compile_define(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
+            Statement::InlineAsm(v)=> { compile_inline_asm(out, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
+            Statement::FuncCall(v) => { compile_func_call(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
+            Statement::Return(v) => { compile_return(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()); has_early_ret = true; break },
+            Statement::If(v) => { compile_if_statement(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()) },
+            _ => { panic!("Cannot compile this statement") }
+        }
+    };
+    has_early_ret
+}
+
 pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, flags: Flags) {
     let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), num_subroutines: 0, flags };
     for (key, val) in (&functab).into_iter() {
@@ -425,18 +450,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             reg_arg_off += type_to_size(arg.arg_type.clone());
         }
         // now actually compile the statements
-        let mut has_early_ret = false;
-        for statement in val.statements.clone() {
-            match statement {
-                Statement::Assign(v) => { compile_assign(&mut out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
-                Statement::Define(v) => { compile_define(&mut out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
-                Statement::InlineAsm(v)=> { compile_inline_asm(&mut out, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
-                Statement::FuncCall(v) => { compile_func_call(&mut out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
-                Statement::Return(v) => { compile_return(&mut out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()); has_early_ret = true; break },
-                _ => { panic!("Cannot compile this statement") }
-            }
-        };
-        if has_early_ret { continue }
+        if compile_scope(&mut out, functab.clone(), all_vars, globals.clone(), stack_args, val.statements.clone(), val.clone(), num_reg_args, stack_added) { continue }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
