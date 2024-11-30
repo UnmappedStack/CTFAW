@@ -57,7 +57,7 @@ You can also use the following options:
 - [ ] Externs & libc compatibility
 - [ ] Arrays
 - [ ] Logical blocks
-    - [ ] If
+    - [X] If
     - [ ] Else
     - [ ] Elseif
     - [ ] While
