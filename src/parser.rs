@@ -5,6 +5,7 @@
 #![allow(dead_code, unused_variables)]
 
 use crate::error::*;
+use crate::utils::*;
 use std::collections::HashMap;
 use crate::optimisation;
 use crate::ast::*;
@@ -34,36 +35,6 @@ pub struct GlobalVar {
     pub identifier: String,
     pub typ: Type,
     pub val: u64,
-}
-
-pub fn get_ident(tok: &Token) -> String {
-    let tok_val = tok.val.clone();
-    if let TokenVal::Literal(v) = tok_val {
-        if let LitVal::Ident(val) = v.val.clone() {
-            val
-        } else {
-            report_err(Component::PARSER, tok.clone(), "Expected identifier, got something else. Failed to compile.");
-            String::from("ctfaw_failure")
-        }
-    } else {
-        report_err(Component::PARSER, tok.clone(), "Expected identifier, got something else. Failed to compile.");
-        String::from("ctfaw_failure")
-    }
-}
-
-pub fn get_str(tok: &Token) -> String {
-    let tok_val = tok.val.clone();
-    if let TokenVal::Literal(v) = tok_val {
-        if let LitVal::Str(val) = v.val.clone() {
-            val
-        } else {
-            report_err(Component::PARSER, tok.clone(), "Expected string literal, got something else.");
-            String::from("ctfaw_failure")
-        }
-    } else {
-        report_err(Component::PARSER, tok.clone(), "Expected string literal, got something else.");
-        String::from("ctfaw_failure")
-    }
 }
 
 /* Function declaration syntax:
@@ -100,7 +71,6 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             global_vars.push(GlobalVar { identifier: global_def_statement.clone().unwrap().identifier, typ: global_def_statement.unwrap().def_type, val });
             skip += n;
         }
-        println!("token = {:?}", token);
         if *token != TokenVal::Func { continue }
         // it's a function declaration indeed. Get the identifier.
         let identifier = get_ident(&tokens_whole[i + 1]);

@@ -2,7 +2,7 @@
 
 #![allow(dead_code, unused_variables)]
 
-use crate::parser::*;
+use crate::utils::*;
 use crate::error::*;
 use crate::lexer::*;
 use crate::ast::*;
@@ -59,13 +59,6 @@ pub enum Statement {
     InlineAsm(InlineAsmStatement),
     Return(BranchChild),
     NullStatement, // NOTE: for debugging only, don't use in the actual compiler!
-}
-
-fn token_is_type(token: TokenVal) -> bool {
-    match token {
-        TokenVal::Type(_) => true,
-        _ => false,
-    }
 }
 
 pub fn parse_define_statement(tokens: Vec<Token>) -> Statement {

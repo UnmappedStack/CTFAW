@@ -4,6 +4,7 @@ use std::process::Command;
 use std::fs;
 use std::env;
 
+mod utils;
 mod typecheck;
 mod lexer;
 mod parser;

@@ -2,6 +2,7 @@
 
 #![allow(dead_code, unused_variables, unused_imports)]
 
+use crate::utils::*;
 use crate::parser::*;
 use crate::error::*;
 use std::collections::HashMap;
