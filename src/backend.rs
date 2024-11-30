@@ -298,8 +298,9 @@ fn compile_ast_branch(out: &mut CompiledAsm, program: &HashMap<String, FuncTable
             write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("lea {}, {}", rax_sized, loc).as_str());
         },
         BranchChildVal::Ident(val) => {
-            let loc = get_var_loc(val, allvars, globals, stack_args).0;
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, loc).as_str());
+            let loc = get_var_loc(val, allvars, globals, stack_args);
+            let rax_sized = register_of_size("rax", loc.1);
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {}, {}", rax_sized, loc.0).as_str());
         },
         BranchChildVal::Fn(val) => {
             compile_func_call(out, program, val, allvars, globals, stack_args);

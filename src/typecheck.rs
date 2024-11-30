@@ -23,6 +23,15 @@ pub fn typecheck_expr(mut expr: BranchChild, vars: &HashMap<String, Type>, progr
                 report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: expr.row, col: expr.col}, "Cannot operate on different types.");
                 unreachable!();
             }
+            match v.op {
+                Operation::Less => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                Operation::LessEqu => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                Operation::Greater => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                Operation::GreaterEqu => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                Operation::Equ => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                Operation::NotEqu => return Type { val: TypeVal::Boolean, ptr_depth: 0 },
+                _ => {},
+            }
             match left.val {
                 TypeVal::Any => right,
                 _ => left,
