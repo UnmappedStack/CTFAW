@@ -171,6 +171,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         }
         let statement_tokens = &tokens_whole[offset..offset + n];
         skip += n + offset - i;
+        /*
         let statements_before_parse: Vec<_> = statement_tokens
             .split(|e| e.val == TokenVal::Endln)
             .filter(|v| !v.is_empty())
@@ -180,6 +181,17 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             let mut statement_vec = Vec::from(statement);
             statement_vec.push(Token {val: TokenVal::Endln, row: 0, col: 0 });
             statements.push(parse_statement(statement_vec));
+        }
+        */
+        let mut this_statement_tokens = Vec::new();
+        let mut statements = Vec::new();
+        let mut tok_iter = statement_tokens.iter();
+        while let Some(this_tok) = tok_iter.next() {
+            this_statement_tokens.push(this_tok.clone());
+            if this_tok.val == TokenVal::Endln {
+                statements.push(parse_statement(this_statement_tokens.clone()));
+                this_statement_tokens.clear();
+            }
         }
         function_table.insert(
             identifier.clone(),
