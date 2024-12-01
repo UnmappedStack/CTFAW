@@ -20,6 +20,8 @@ pub struct CompiledAsm {
     text: String,
     data: String,
     rodata: String,
+    externs: Vec<String>,
+    globals: Vec<String>,
     string_literals: Vec<String>,
     num_strings: usize,
     spaces: String,
@@ -382,16 +384,16 @@ pub fn compile_func_call(out: &mut CompiledAsm, program: &HashMap<String, FuncTa
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("call {}", statement.fn_ident).as_str());
 }
 
-fn compile_if_statement(out: &mut CompiledAsm, program: &HashMap<String, FuncTableVal>, statement: IfStatement, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) {
+fn compile_if_statement(out: &mut CompiledAsm, program: &mut HashMap<String, FuncTableVal>, statement: IfStatement, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) {
     compile_expression(out, program, statement.condition, all_vars.clone(), globals.clone(), stack_args.clone(), Type {val: TypeVal::Boolean, ptr_depth: 0});
     write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("cmp al, 0\nje sect{}", out.num_subroutines).as_str());
-    compile_scope(out, program.clone(), all_vars, globals, stack_args, statement.body, val, num_reg_args, stack_added);
+    compile_scope(out, program, all_vars, globals, stack_args, statement.body, val, num_reg_args, stack_added);
     write_text(&mut out.text, String::new(), out.flags.clone(), format!("sect{}:", out.num_subroutines).as_str());
     out.num_subroutines += 1;
 }
 
 // Returns whether or not there's an early return.
-fn compile_scope(out: &mut CompiledAsm, functab: HashMap<String, FuncTableVal>, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, statements: Vec<Statement>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) -> bool {
+fn compile_scope(out: &mut CompiledAsm, functab: &mut HashMap<String, FuncTableVal>, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, statements: Vec<Statement>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) -> bool {
     let mut has_early_ret = false;
     for statement in statements {
         match statement {
@@ -400,7 +402,10 @@ fn compile_scope(out: &mut CompiledAsm, functab: HashMap<String, FuncTableVal>, 
             Statement::InlineAsm(v)=> { compile_inline_asm(out, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
             Statement::FuncCall(v) => { compile_func_call(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
             Statement::Return(v) => { compile_return(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()); has_early_ret = true; break },
-            Statement::If(v) => { compile_if_statement(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()) },
+            Statement::If(v) => { compile_if_statement(out, functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()) },
+            Statement::Extern(v) => {
+                out.externs.push(v.identifier.clone()); functab.insert(v.identifier, v.val);
+            },
             _ => { panic!("Cannot compile this statement") }
         }
     };
@@ -426,9 +431,14 @@ fn get_local_vars(statements: &Vec<Statement>) -> Vec<LocalVar> {
     all_vars
 }
 
-pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, flags: Flags) {
-    let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), num_subroutines: 0, flags };
-    for (key, val) in (&functab).into_iter() {
+pub fn compile(functab: &mut HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, mut externs: Vec<String>, flags: Flags) {
+    let mut out = CompiledAsm { text: String::new(), data: String::new(), rodata: String::new(), externs: Vec::new(), globals: Vec::new(), string_literals: Vec::new(), num_strings: 0, spaces: String::new(), num_subroutines: 0, flags };
+    for (key, val) in functab.clone().into_iter() {
+        match val.statements.clone() {
+            None => continue,
+            _ => {},
+        };
+        out.globals.push(key.clone());
         out.spaces.clear();
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("\n{}: push rbp", key).as_str());
         for space in key.chars() {
@@ -461,7 +471,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             reg_arg_off += type_to_size(arg.arg_type.clone());
         }
         // now actually compile the statements
-        if compile_scope(&mut out, functab.clone(), all_vars, globals.clone(), stack_args, val.statements.clone().unwrap().clone(), val.clone(), num_reg_args, stack_added) { continue }
+        if compile_scope(&mut out, functab, all_vars, globals.clone(), stack_args, val.statements.clone().unwrap().clone(), val.clone(), num_reg_args, stack_added) { continue }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
@@ -475,7 +485,14 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
     }
     
     let mut file = File::create("out.asm").expect("Couldn't open file");
-    let _ = file.write_all(format!("[BITS 64]\n\nglobal _start\n").as_bytes());
+    let _ = file.write_all(format!("[BITS 64]\n\n").as_bytes());
+    for global in out.globals {
+        let _ = file.write_all(format!("global {}\n", global).as_bytes());
+    }
+    externs.extend(out.externs);
+    for ext in externs {
+        let _ = file.write_all(format!("extern {}\n", ext).as_bytes());
+    }
     let _ = file.write_all(format!("\nsection .text\n{}\n", out.text).as_bytes());
     let _ = file.write_all(format!("section .data\n\n{}", out.data).as_bytes());
     let _ = file.write_all(format!("section .rodata\n\n{}", out.rodata).as_bytes());

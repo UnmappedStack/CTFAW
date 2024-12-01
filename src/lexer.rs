@@ -62,7 +62,7 @@ pub enum TokenVal {
     Type(Type),
 
     // Some other keywords
-    Let, Const, If, Else, ElseIf, Func, While, Return,
+    Let, Const, If, Else, ElseIf, Func, While, Return, Extern,
 
     // Other
     Comma, Colon, Lbrace, Rbrace, Endln, Assign
@@ -340,6 +340,7 @@ pub fn lex(txt: &str) -> Vec<Token> {
                     "as" => tokens.push(Token::new(TokenVal::Ops(Operation::As), row, col)),
                     "while" => tokens.push(Token::new(TokenVal::While, row, col)),
                     "return" => tokens.push(Token::new(TokenVal::Return, row, col)),
+                    "extern" => tokens.push(Token::new(TokenVal::Extern, row, col)),
                     _ => tokens.push(Token::new(TokenVal::Literal(Literal { val: LitVal::Ident(String::from(s)), typ: Type {val: TypeVal::Any, ptr_depth: 0}}), row, col)),
                 }
             },

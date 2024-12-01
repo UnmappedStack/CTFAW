@@ -1,16 +1,12 @@
+extern puts(txt: u64);
 const globalthing: u32 = 21 + 3 * 2;
 
-fn main(to_add: u32) -> u32 {
-    let msg: char* = "hello world!\n";
+fn main() -> u32 {
+    let msg: char* = "hello world from the libc!\n";
+    puts(msg as u64);
     let num: u32 = 5;
     // write the text to stdout
-    asm("mov rax, 1\nmov rdi, 1\nmov rdx, 13\nsyscall" : "rsi" | msg : : );
     let num_addr: u32* = &num;
-    *num_addr = 42 + to_add;
+    *num_addr = 42;
     return num + globalthing;
-}
-
-fn _start() {
-    let status: u64 = main(1) as u64;
-    asm("mov rax, 60\nsyscall" : "rdi" | status : :);
 }

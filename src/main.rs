@@ -82,9 +82,10 @@ fn main() {
     println!("[ SELF ] Compiling...");
     let tokens = lexer::lex(input);
     let mut global_vars = Vec::new();
-    let ir = parser::parse(tokens, &mut global_vars);
-    typecheck::typecheck(&ir, &global_vars, &HashMap::new());
-    backend::compile(ir, global_vars, flags.clone());
+    let mut externs = Vec::new();
+    let mut ir = parser::parse(tokens, &mut global_vars, &mut externs);
+    typecheck::typecheck(&mut ir, &global_vars, &HashMap::new());
+    backend::compile(&mut ir, global_vars, externs, flags.clone());
     
     if flags.just_asm {
         if flags.outfile_set { let _ = fs::rename("out.asm", flags.out_file); }
@@ -101,8 +102,8 @@ fn main() {
         return
     }
     println!("[  LD  ] Linking...");
-    Command::new("ld")
-        .args(["-o", "out", "out.o"])
+    Command::new("gcc")
+        .args(["-o", "out", "out.o", "-lc", "-no-pie"])
         .status()
         .expect("Failed to run linker");
     let _ = fs::remove_file("out.o");

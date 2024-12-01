@@ -2,6 +2,7 @@
 
 #![allow(dead_code, unused_variables)]
 
+use crate::parser::*;
 use crate::utils::*;
 use crate::error::*;
 use crate::lexer::*;
@@ -58,6 +59,12 @@ pub struct InlineAsmStatement {
 }
 
 #[derive(Debug, Clone)]
+pub struct ExternStatement {
+    pub identifier: String,
+    pub val: FuncTableVal,
+}
+
+#[derive(Debug, Clone)]
 pub enum Statement {
     Define(DefineStatement),
     Assign(AssignStatement),
@@ -65,6 +72,7 @@ pub enum Statement {
     InlineAsm(InlineAsmStatement),
     Return(BranchChild),
     If(IfStatement),
+    Extern(ExternStatement),
     NullStatement, // NOTE: for debugging only, don't use in the actual compiler!
 }
 
@@ -233,6 +241,20 @@ pub fn parse_statement(tokens: Vec<Token>) -> Statement {
     let second_token = iter.next().unwrap();
     let mut func_name_maybe = None;
     match &first_token.val {
+        TokenVal::Extern => {
+            let token_vals: Vec<TokenVal> = tokens.clone().into_iter()
+                .map(|parent| parent.val)
+                .collect();
+            let (_, signature, _, _, identifier) = parse_func_sig(tokens.clone(), 0, token_vals.clone());
+            Statement::Extern(ExternStatement {
+                identifier,
+                val: FuncTableVal {
+                    signature,
+                    statements: None,
+                    is_extern: true
+                }
+            })
+        },
         TokenVal::Return => parse_return_statement(tokens),
         TokenVal::Const | TokenVal::Let => parse_define_statement(tokens),
         TokenVal::Ops(v) => {

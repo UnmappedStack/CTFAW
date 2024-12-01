@@ -93,7 +93,7 @@ fn parse_scope(statement_tokens: &[Token]) -> Vec<Statement> {
 }
 
 // Returns is_specified, 
-fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>) -> (bool, FuncSig, TokenVal, usize, String) {
+pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>) -> (bool, FuncSig, TokenVal, usize, String) {
     let identifier = get_ident(&tokens_whole[i + 1]);
     // Get the args
     let mut args = Vec::new();
@@ -158,7 +158,7 @@ fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>) -> 
  * Note that if a return type isn't specified, then U32 is assumed and 0 will be returned by
  * default. In my opinion this is cleaner than using a void type.
  */
-pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> HashMap<String, FuncTableVal> {
+pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>, externs: &mut Vec<String>) -> HashMap<String, FuncTableVal> {
     let tokens: Vec<TokenVal> = tokens_whole.clone().into_iter()
         .map(|parent| parent.val)
         .collect();
@@ -183,6 +183,18 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             let val = if let BranchChildVal::Int(v) = global_def_statement.clone().unwrap().expr.val { v } else { unreachable!() };
             global_vars.push(GlobalVar { identifier: global_def_statement.clone().unwrap().identifier, typ: global_def_statement.unwrap().def_type, val });
             skip += n;
+        }
+        if *token == TokenVal::Extern {
+            let (_, signature, _, _, identifier) = parse_func_sig(tokens_whole.clone(), i, tokens.clone());
+            function_table.insert(
+                identifier.clone(),
+                FuncTableVal {
+                    signature,
+                    statements: None,
+                    is_extern: true
+                }
+            );
+            externs.push(identifier);
         }
         if *token != TokenVal::Func { continue }
         let (is_specified, signature, to_check, offset, identifier) = parse_func_sig(tokens_whole.clone(), i, tokens.clone());
