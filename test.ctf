@@ -3,8 +3,8 @@ extern exit(code: i32);
 const MAX_LEVEL: u64 = 10;
 
 fn fib_level(depth: u64, current_val: u64, prev_val: u64) {
-    if (depth == 10) {
-        exit(0);
+    if (depth == MAX_LEVEL) {
+        return 0;
     }
     printf("Current val: %d, depth: %d\n", current_val, depth);
     fib_level(depth + 1, current_val + prev_val, current_val);
