@@ -97,7 +97,7 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
     let identifier = get_ident(&tokens_whole[i + 1]);
     // Get the args
     let mut args = Vec::new();
-    let mut decl_iter = tokens.iter().skip(i + 2);
+    let mut decl_iter = (&tokens[i + 2..]).iter().peekable();
     let next = decl_iter.next().unwrap().clone();
     assert_report(next == TokenVal::Lparen, Component::PARSER, tokens_whole[i + 2].clone(), "Expected token after function identifier to be `(`, got something else instead.");
     let mut num_open_lparens = 1;
@@ -115,7 +115,19 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
         offset += 2;
         assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[offset - 2].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
         let argtype = if let TokenVal::Type(v) = decl_iter.next().unwrap().clone() {
-            v
+            let mut ptr_depth = 0;
+            loop {
+                if **decl_iter.peek().unwrap() == TokenVal::Ops(Operation::Star) {
+                    ptr_depth += 1;
+                    decl_iter.next();
+                } else {
+                    break;
+                }
+            }
+            Type {
+                val: v.val,
+                ptr_depth,
+            }
         } else {
             report_err(Component::PARSER, tokens_whole[offset - 1].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
             unreachable!();

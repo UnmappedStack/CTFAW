@@ -1,9 +1,9 @@
-extern puts(txt: u64);
+extern puts(txt: char*);
 const globalthing: u32 = 21 + 3 * 2;
 
 fn main() -> u32 {
     let msg: char* = "hello world from the libc!\n";
-    puts(msg as u64);
+    puts(msg);
     let num: u32 = 5;
     // write the text to stdout
     let num_addr: u32* = &num;
