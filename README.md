@@ -54,7 +54,7 @@ You can also use the following options:
 - [X] Signed operations
 - [X] Bitwise operations (`>>`/`<<`, `|`, `&`, `^`, `~`, etc.)
 - [X] Logical operations (`&&`, `||`, `!`, etc.)
-- [ ] Externs & libc compatibility
+- [X] Externs & libc compatibility
 - [ ] Arrays
 - [ ] Logical blocks
     - [X] If
