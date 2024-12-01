@@ -91,6 +91,63 @@ fn parse_scope(statement_tokens: &[Token]) -> Vec<Statement> {
     statements
 }
 
+// Returns is_specified, 
+fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>) -> (bool, FuncSig, TokenVal, usize, String) {
+    let identifier = get_ident(&tokens_whole[i + 1]);
+    // Get the args
+    let mut args = Vec::new();
+    let mut decl_iter = tokens.iter().skip(i + 2);
+    let next = decl_iter.next().unwrap().clone();
+    assert_report(next == TokenVal::Lparen, Component::PARSER, tokens_whole[i + 2].clone(), "Expected token after function identifier to be `(`, got something else instead.");
+    let mut num_open_lparens = 1;
+    let mut offset = i + 4;
+    while let Some(this_token) = decl_iter.next() {
+        offset += 1;
+        if *this_token == TokenVal::Comma { continue }
+        if *this_token == TokenVal::Lparen { num_open_lparens += 1; continue }
+        if *this_token == TokenVal::Rparen {
+            num_open_lparens -= 1;
+            if num_open_lparens == 0 { break }
+            continue;
+        }
+        let identifier = get_ident(&tokens_whole[offset - 2]);
+        offset += 2;
+        assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[offset - 2].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
+        let argtype = if let TokenVal::Type(v) = decl_iter.next().unwrap().clone() {
+            v
+        } else {
+            report_err(Component::PARSER, tokens_whole[offset - 1].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
+            unreachable!();
+        };
+        args.push(FuncArg {
+            arg_type: argtype,
+            val: identifier,
+        });
+    }
+    let next_tok = decl_iter.next().unwrap();
+    let mut to_check = next_tok.clone();
+    let mut is_specified = false;
+    let rettype = if *next_tok == TokenVal::Arrow {
+        is_specified = true;
+        offset += 2;
+        let result = if let TokenVal::Type(mut t) = decl_iter.next().unwrap().clone() {
+            to_check = decl_iter.next().unwrap().clone();
+            for tok in &tokens_whole[i + 6..] {
+                if tok.val != TokenVal::Ops(Operation::Star) {break}
+                to_check = decl_iter.next().unwrap().clone();
+                t.ptr_depth += 1;
+            }
+            t
+        } else {
+            report_err(Component::PARSER, tokens_whole[i + 7].clone(), "Expected type after -> in function declaration specifying return type, got something else.");
+            unreachable!();
+        };
+        result
+    } else {
+        Type {val: TypeVal::U32, ptr_depth: 0}
+    };
+    (is_specified, FuncSig { ret_type: rettype, args }, to_check, offset, identifier)
+}
 
 /* Function declaration syntax:
  * func fnName(arg: type, arg: type) -> retType {}
@@ -127,64 +184,12 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             skip += n;
         }
         if *token != TokenVal::Func { continue }
-        // it's a function declaration indeed. Get the identifier.
-        let identifier = get_ident(&tokens_whole[i + 1]);
-        // Get the args
-        let mut args = Vec::new();
-        let mut decl_iter = tokens.iter().skip(i + 2);
-        let next = decl_iter.next().unwrap().clone();
-        assert_report(next == TokenVal::Lparen, Component::PARSER, tokens_whole[i + 2].clone(), "Expected token after function identifier to be `(`, got something else instead.");
-        let mut num_open_lparens = 1;
-        let mut offset = i + 4;
-        while let Some(this_token) = decl_iter.next() {
-            offset += 1;
-            if *this_token == TokenVal::Comma { continue }
-            if *this_token == TokenVal::Lparen { num_open_lparens += 1; continue }
-            if *this_token == TokenVal::Rparen {
-                num_open_lparens -= 1;
-                if num_open_lparens == 0 { break }
-                continue;
-            }
-            let identifier = get_ident(&tokens_whole[offset - 2]);
-            offset += 2;
-            assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[offset - 2].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
-            let argtype = if let TokenVal::Type(v) = decl_iter.next().unwrap().clone() {
-                v
-            } else {
-                report_err(Component::PARSER, tokens_whole[offset - 1].clone(), "Expected type after colon (`:`) in function signature arg list, got something else instead.");
-                unreachable!();
-            };
-            args.push(FuncArg {
-                arg_type: argtype,
-                val: identifier,
-            });
-        }
-        let next_tok = decl_iter.next().unwrap();
-        let mut to_check = next_tok.clone();
-        let mut is_specified = false;
-        let rettype = if *next_tok == TokenVal::Arrow {
-            is_specified = true;
-            offset += 2;
-            let result = if let TokenVal::Type(mut t) = decl_iter.next().unwrap().clone() {
-                to_check = decl_iter.next().unwrap().clone();
-                for tok in &tokens_whole[i + 6..] {
-                    if tok.val != TokenVal::Ops(Operation::Star) {break}
-                    to_check = decl_iter.next().unwrap().clone();
-                    t.ptr_depth += 1;
-                }
-                t
-            } else {
-                report_err(Component::PARSER, tokens_whole[i + 7].clone(), "Expected type after -> in function declaration specifying return type, got something else.");
-                unreachable!();
-            };
-            result
-        } else {
-            Type {val: TypeVal::U32, ptr_depth: 0}
-        };
+        let (is_specified, signature, to_check, offset, identifier) = parse_func_sig(tokens_whole.clone(), i, tokens.clone());
         let o = if is_specified { 6 } else { 4 } as usize;
         assert_report(to_check == TokenVal::Lbrace, Component::PARSER, tokens_whole[i + o].clone(), "Expected left brace (`{`) after function declaration, got something else.");
         let mut num_open_lbraces = 1;
         let mut n = 0;
+        let mut decl_iter = tokens.iter().skip(offset);
         while let Some(this_token) = decl_iter.next() {
             if *this_token == TokenVal::Lbrace { n += 1; num_open_lbraces += 1; continue }
             if *this_token == TokenVal::Rbrace {
@@ -200,10 +205,7 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
         function_table.insert(
             identifier.clone(),
             FuncTableVal {
-                signature: FuncSig {
-                    ret_type: rettype,
-                    args,
-                },
+                signature,
                 statements: parse_scope(statement_tokens),
             }
         );
