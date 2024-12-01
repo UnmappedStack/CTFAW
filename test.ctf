@@ -1,10 +1,16 @@
 extern printf(txt: char*, ...);
-const globalthing: u32 = 21 + 3 * 2;
+extern exit(code: i32); 
+const MAX_LEVEL: u64 = 10;
 
-fn main() -> u32 {
-    let num: u32 = 5;
-    // write the text to stdout
-    let num_addr: u32* = &num;
-    *num_addr = 42;
-    printf("Number: %d\n", num + globalthing);
+fn fib_level(depth: u64, current_val: u64, prev_val: u64) {
+    if (depth == 10) {
+        exit(0);
+    }
+    printf("Current val: %d, depth: %d\n", current_val, depth);
+    fib_level(depth + 1, current_val + prev_val, current_val);
+}
+
+fn main() {
+    printf("Fibonacci in CTFAW...\n");
+    fib_level(1, 1, 1);
 }

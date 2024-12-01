@@ -126,8 +126,8 @@ fn get_var_loc(v: String, locals: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_
         Some(val) => {
             let mut off = 0;
             for l in &locals {
-                off += type_to_size(l.typ.clone());
                 if v == l.ident { break }
+                off += type_to_size(l.typ.clone());
             }
             let ptr_type = ptr_ident_of_size(locals[val].typ.clone());
             (format!("{} [rbp - {}]", ptr_type, off), locals[val].typ.clone())
@@ -463,7 +463,7 @@ pub fn compile(functab: &mut HashMap<String, FuncTableVal>, globals: Vec<GlobalV
                 continue;
             }
             let sized_reg = register_of_size(REGS[i], arg.arg_type.clone());
-            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rsp + {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
+            write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("mov {} [rbp - {}], {}", ptr_ident_of_size(arg.arg_type.clone()), reg_arg_off, sized_reg).as_str());
             all_vars.insert(i, LocalVar {
                 ident: arg.val.clone(),
                 typ: arg.arg_type.clone()
