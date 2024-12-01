@@ -3,6 +3,7 @@
 use std::process::Command;
 use std::fs;
 use std::env;
+use std::collections::HashMap;
 
 mod utils;
 mod typecheck;
@@ -82,7 +83,7 @@ fn main() {
     let tokens = lexer::lex(input);
     let mut global_vars = Vec::new();
     let ir = parser::parse(tokens, &mut global_vars);
-    typecheck::typecheck(&ir, &global_vars);
+    typecheck::typecheck(&ir, &global_vars, &HashMap::new());
     backend::compile(ir, global_vars, flags.clone());
     
     if flags.just_asm {

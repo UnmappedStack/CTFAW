@@ -2,6 +2,7 @@
 
 #![allow(unused_variables, unused_imports)]
 
+use crate::backend::*;
 use std::collections::HashMap;
 use crate::parser::*;
 use crate::lexer::*;
@@ -88,54 +89,64 @@ fn typecheck_simple(ret_type: Type, expr: BranchChild, vars: &HashMap<String, Ty
     }
 }
 
-pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVar>) {
-    for (i, entry) in program.iter().enumerate() {
-        let mut local_vars = HashMap::new();
-        for global in globals {
-            local_vars.insert(global.identifier.clone(), global.typ.clone());
-        }
-        for arg in entry.1.signature.args.clone() {
-            local_vars.insert(arg.val, arg.arg_type);
-        }
-        let statements = &entry.1.statements;
-        for statement in statements {
-            match statement {
-                Statement::Define(s) => {
-                    typecheck_simple(s.def_type.clone(), s.expr.clone(), &local_vars, false, program);
-                    local_vars.insert(s.identifier.clone(), s.def_type.clone());
-                },
-                Statement::Assign(s) => {
-                    let mut ret_type = match local_vars.get(s.identifier.as_str()) {
-                        Some(v) => v.clone(),
-                        None => {
-                            report_err(Component::ANALYSIS, s.ident_tok.clone(), format!("Undefined variable: {}", s.identifier).as_str());
-                            unreachable!();
-                        }
-                    };
-                    if s.deref { ret_type.ptr_depth -= 1 }
-                    typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false, program);
-                    let mut s_copy = s.clone();
-                    s_copy.typ = ret_type.clone();
-                },
-                Statement::Return(s) => {
-                    typecheck_simple(entry.1.signature.ret_type.clone(), s.clone(), &local_vars, true, program);
-                },
-                Statement::FuncCall(c) => {
-                    let func = match program.get(&c.fn_ident) {
-                        Some(f) => f,
-                        None => {
-                            report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Undefined function: {}", c.fn_ident).as_str());
-                            unreachable!();
-                        }
-                    };
-                    assert_report(c.args.len() == func.signature.args.len(), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call.");
-                    for (i, arg) in c.args.clone().into_iter().enumerate() {
-                        let val_type = typecheck_expr(arg, &local_vars, program);
-                        assert_report(val_type == func.signature.args[i].arg_type, Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Argument {} of function call recieved is type {:?}, expected type {:?}", i, val_type, func.signature.args[i].arg_type).as_str());
+fn typecheck_function(i: usize, func: (&String, &FuncTableVal), program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVar>, startwith: &HashMap<String, Type>) {
+    let mut local_vars = HashMap::new();
+    local_vars.extend(startwith.clone());
+    for global in globals {
+        local_vars.insert(global.identifier.clone(), global.typ.clone());
+    }
+    for arg in func.1.signature.args.clone() {
+        local_vars.insert(arg.val, arg.arg_type);
+    }
+    let statements = &func.1.statements;
+    for statement in statements {
+        match statement {
+            Statement::If(s) => {
+                let mut second = func.1.clone();
+                second.statements = s.body.clone();
+                typecheck_function(i, (func.0, &second), program, globals, &local_vars);
+            },
+            Statement::Define(s) => {
+                typecheck_simple(s.def_type.clone(), s.expr.clone(), &local_vars, false, program);
+                local_vars.insert(s.identifier.clone(), s.def_type.clone());
+            },
+            Statement::Assign(s) => {
+                let mut ret_type = match local_vars.get(s.identifier.as_str()) {
+                    Some(v) => v.clone(),
+                    None => {
+                        report_err(Component::ANALYSIS, s.ident_tok.clone(), format!("Undefined variable: {}", s.identifier).as_str());
+                        unreachable!();
                     }
+                };
+                if s.deref { ret_type.ptr_depth -= 1 }
+                typecheck_simple(ret_type.clone(), s.expr.clone(), &local_vars, false, program);
+                let mut s_copy = s.clone();
+                s_copy.typ = ret_type.clone();
+            },
+            Statement::Return(s) => {
+                typecheck_simple(func.1.signature.ret_type.clone(), s.clone(), &local_vars, true, program);
+            },
+            Statement::FuncCall(c) => {
+                let func = match program.get(&c.fn_ident) {
+                    Some(f) => f,
+                    None => {
+                        report_err(Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Undefined function: {}", c.fn_ident).as_str());
+                        unreachable!();
+                    }
+                };
+                assert_report(c.args.len() == func.signature.args.len(), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call.");
+                for (i, arg) in c.args.clone().into_iter().enumerate() {
+                    let val_type = typecheck_expr(arg, &local_vars, program);
+                    assert_report(val_type == func.signature.args[i].arg_type, Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Argument {} of function call recieved is type {:?}, expected type {:?}", i, val_type, func.signature.args[i].arg_type).as_str());
                 }
-                _ => {}
             }
+            _ => {}
         }
+    }
+}
+
+pub fn typecheck(program: &HashMap<String, FuncTableVal>, globals: &Vec<GlobalVar>, startwith: &HashMap<String, Type>) {
+    for (i, entry) in program.iter().enumerate() {
+        typecheck_function(i, entry, program, globals, startwith);
     }
 }
