@@ -27,7 +27,8 @@ pub struct FuncSig {
 #[derive(Debug, Clone)]
 pub struct FuncTableVal {
     pub signature: FuncSig,
-    pub statements: Vec<Statement>,
+    pub statements: Option<Vec<Statement>>,
+    pub is_extern: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -206,7 +207,8 @@ pub fn parse(tokens_whole: Vec<Token>, global_vars: &mut Vec<GlobalVar>) -> Hash
             identifier.clone(),
             FuncTableVal {
                 signature,
-                statements: parse_scope(statement_tokens),
+                statements: Some(parse_scope(statement_tokens)),
+                is_extern: false,
             }
         );
     }

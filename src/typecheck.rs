@@ -98,12 +98,12 @@ fn typecheck_function(i: usize, func: (&String, &FuncTableVal), program: &HashMa
     for arg in func.1.signature.args.clone() {
         local_vars.insert(arg.val, arg.arg_type);
     }
-    let statements = &func.1.statements;
+    let statements = &func.1.statements.clone().unwrap();
     for statement in statements {
         match statement {
             Statement::If(s) => {
                 let mut second = func.1.clone();
-                second.statements = s.body.clone();
+                second.statements = Some(s.body.clone());
                 typecheck_function(i, (func.0, &second), program, globals, &local_vars);
             },
             Statement::Define(s) => {

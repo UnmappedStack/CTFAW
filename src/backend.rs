@@ -438,7 +438,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
         let mut stack_args = Vec::new();
         let num_reg_args = 0; 
         // init local vars
-        let mut all_vars = get_local_vars(&val.statements);
+        let mut all_vars = get_local_vars(&val.statements.clone().unwrap());
         let num_reg_args = if val.signature.args.len() <= 6 { val.signature.args.len() } else { 6 };
         let stack_added = (((all_vars.len() + num_reg_args) * 8) + 15) & !15;
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "mov rbp, rsp");
@@ -461,7 +461,7 @@ pub fn compile(functab: HashMap<String, FuncTableVal>, globals: Vec<GlobalVar>, 
             reg_arg_off += type_to_size(arg.arg_type.clone());
         }
         // now actually compile the statements
-        if compile_scope(&mut out, functab.clone(), all_vars, globals.clone(), stack_args, val.statements.clone(), val.clone(), num_reg_args, stack_added) { continue }
+        if compile_scope(&mut out, functab.clone(), all_vars, globals.clone(), stack_args, val.statements.clone().unwrap().clone(), val.clone(), num_reg_args, stack_added) { continue }
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("add rsp, {}", stack_added).as_str());
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "pop rbp");
         write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), "xor rax, rax");
