@@ -65,7 +65,7 @@ pub enum TokenVal {
     Let, Const, If, Else, ElseIf, Func, While, Return, Extern,
 
     // Other
-    Comma, Colon, Lbrace, Rbrace, Endln, Assign
+    Comma, Colon, Lbrace, Rbrace, Endln, Assign, TripleDot,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -303,6 +303,21 @@ pub fn lex(txt: &str) -> Vec<Token> {
                 col += 2;
                 c += 2;
             },
+            '.' => {
+                let next_char = iter.peek().unwrap();
+                if *next_char == '.' {
+                    iter.next();
+                    if iter.next().unwrap() == '.' {
+                        tokens.push(Token::new(TokenVal::TripleDot, row, col));
+                        c += 2;
+                        col += 2;
+                    } else {
+                        report_err(Component::LEXER, Token {val: TokenVal::Endln, row: row as u64, col: col as u64}, "Found .., expected third dot.");
+                    }
+                } else {
+                    report_err(Component::LEXER, Token {val: TokenVal::Endln, row: row as u64, col: col as u64}, "Found ., expected second and third dot.");
+                }
+            }
             // handle both identifiers and keywords
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut this_char: char = current_char;

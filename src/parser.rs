@@ -22,6 +22,7 @@ pub struct FuncArg {
 pub struct FuncSig {
     pub ret_type: Type,
     pub args: Vec<FuncArg>,
+    pub varargs_idx: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,6 +103,8 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
     assert_report(next == TokenVal::Lparen, Component::PARSER, tokens_whole[i + 2].clone(), "Expected token after function identifier to be `(`, got something else instead.");
     let mut num_open_lparens = 1;
     let mut offset = i + 4;
+    let mut arg_num = 0;
+    let mut varargs_idx = None;
     while let Some(this_token) = decl_iter.next() {
         offset += 1;
         if *this_token == TokenVal::Comma { continue }
@@ -111,6 +114,11 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
             if num_open_lparens == 0 { break }
             continue;
         }
+        if tokens[offset - 2] == TokenVal::TripleDot {
+            varargs_idx = Some(arg_num);
+            continue;
+        }
+        arg_num += 1;
         let identifier = get_ident(&tokens_whole[offset - 2]);
         offset += 2;
         assert_report(*decl_iter.next().unwrap() == TokenVal::Colon, Component::PARSER, tokens_whole[offset - 2].clone(), "Expected `:` after identifier in arg list of function declaration, got something else.");
@@ -120,6 +128,7 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
                 if **decl_iter.peek().unwrap() == TokenVal::Ops(Operation::Star) {
                     ptr_depth += 1;
                     decl_iter.next();
+                    offset += 1;
                 } else {
                     break;
                 }
@@ -159,7 +168,7 @@ pub fn parse_func_sig(tokens_whole: Vec<Token>, i: usize, tokens: Vec<TokenVal>)
     } else {
         Type {val: TypeVal::U32, ptr_depth: 0}
     };
-    (is_specified, FuncSig { ret_type: rettype, args }, to_check, offset, identifier)
+    (is_specified, FuncSig { ret_type: rettype, args, varargs_idx }, to_check, offset, identifier)
 }
 
 /* Function declaration syntax:

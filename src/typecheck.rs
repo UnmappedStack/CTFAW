@@ -142,8 +142,19 @@ fn typecheck_function(i: usize, func: (&String, &FuncTableVal), program: &mut Ha
                         unreachable!();
                     }
                 };
-                assert_report(c.args.len() == func.signature.args.len(), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call.");
+                match func.signature.varargs_idx {
+                    Some(v) => {
+                        assert_report(c.args.len() >= v as usize, Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call (has var args)");
+                    },
+                    None => {
+                        assert_report(c.args.len() == func.signature.args.len(), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, "Incorrect number of arguments given to function call (no var args)");
+                    }
+                }
                 for (i, arg) in c.args.clone().into_iter().enumerate() {
+                    match func.signature.varargs_idx {
+                        Some(v) => if i >= v as usize { break },
+                        None => {}
+                    };
                     let val_type = typecheck_expr(arg, &local_vars, program);
                     assert_report(!(val_type != func.signature.args[i].arg_type && val_type.val != TypeVal::Any), Component::ANALYSIS, Token {val: TokenVal::Endln, row: c.row, col: c.col}, format!("Argument {} of function call recieved is type {:?}, expected type {:?}", i, val_type, func.signature.args[i].arg_type).as_str());
                 }
