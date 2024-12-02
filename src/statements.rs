@@ -18,6 +18,12 @@ pub struct IfStatement {
 }
 
 #[derive(Debug, Clone)]
+pub struct WhileStatement {
+    pub condition: BranchChild,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug, Clone)]
 pub struct DefineStatement {
     is_const: bool,
     pub identifier: String,
@@ -72,6 +78,7 @@ pub enum Statement {
     InlineAsm(InlineAsmStatement),
     Return(BranchChild),
     If(IfStatement),
+    While(WhileStatement),
     Extern(ExternStatement),
     NullStatement, // NOTE: for debugging only, don't use in the actual compiler!
 }

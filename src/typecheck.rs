@@ -114,6 +114,11 @@ fn typecheck_function(i: usize, func: (&String, &FuncTableVal), program: &mut Ha
                 second.statements = Some(s.body.clone());
                 typecheck_function(i, (func.0, &second), program, globals, &local_vars);
             },
+            Statement::While(s) => {
+                let mut second = func.1.clone();
+                second.statements = Some(s.body.clone());
+                typecheck_function(i, (func.0, &second), program, globals, &local_vars);
+            },
             Statement::Define(s) => {
                 typecheck_simple(s.def_type.clone(), s.expr.clone(), &local_vars, false, program);
                 local_vars.insert(s.identifier.clone(), s.def_type.clone());

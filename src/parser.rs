@@ -46,7 +46,8 @@ fn parse_scope(statement_tokens: &[Token]) -> Vec<Statement> {
     let mut y = 0;
     while let Some(this_tok) = tok_iter.next() {
         y += 1;
-        if this_tok.val == TokenVal::If { // TODO: Add more cases for if, else, elseif, while, for, etc
+        if this_tok.val == TokenVal::If || this_tok.val == TokenVal::While { // TODO: Add more cases for if, else, elseif, while, for, etc
+            let original_tok = this_tok.clone();
             let next_tok = tok_iter.next().unwrap();
             assert_report(next_tok.val == TokenVal::Lparen, Component::PARSER, next_tok.clone(), "Expected left parenthesis ( after logical block statement (such as if/elseif/else/for/while), got something else.");
             y += 2;
@@ -76,12 +77,28 @@ fn parse_scope(statement_tokens: &[Token]) -> Vec<Statement> {
             let inner_statement_tokens = &statement_tokens[y..y + n];
             let statement_list = parse_scope(inner_statement_tokens);
             let condition_tree = parse_expression(condition_tokens);
-            statements.push(Statement::If(
-                IfStatement {
-                    condition: condition_tree,
-                    body: statement_list,
-                }
-            ));
+            
+            match original_tok.val {
+                TokenVal::If => {
+                    statements.push(Statement::If(
+                        IfStatement {
+                            condition: condition_tree,
+                            body: statement_list,
+                        }
+                    ));
+                },
+                TokenVal::While => {
+                    statements.push(Statement::While(
+                        WhileStatement {
+                            condition: condition_tree,
+                            body: statement_list,
+                        }
+                    ));
+                },
+                _ => {},
+            };
+
+
             continue
         }
         this_statement_tokens.push(this_tok.clone());

@@ -392,6 +392,17 @@ fn compile_if_statement(out: &mut CompiledAsm, program: &mut HashMap<String, Fun
     out.num_subroutines += 1;
 }
 
+fn compile_while_statement(out: &mut CompiledAsm, program: &mut HashMap<String, FuncTableVal>, statement: WhileStatement, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) {
+    write_text(&mut out.text, String::new(), out.flags.clone(), format!("sect{}:", out.num_subroutines).as_str());
+    compile_expression(out, program, statement.condition, all_vars.clone(), globals.clone(), stack_args.clone(), Type {val: TypeVal::Boolean, ptr_depth: 0});
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("cmp al, 0\nje sect{}", out.num_subroutines + 1).as_str());
+    compile_scope(out, program, all_vars, globals, stack_args, statement.body, val, num_reg_args, stack_added);
+    write_text(&mut out.text, out.spaces.clone(), out.flags.clone(), format!("jmp sect{}", out.num_subroutines).as_str());
+    out.num_subroutines += 1;
+    write_text(&mut out.text, String::new(), out.flags.clone(), format!("sect{}:", out.num_subroutines).as_str());
+    out.num_subroutines += 1;
+}
+
 // Returns whether or not there's an early return.
 fn compile_scope(out: &mut CompiledAsm, functab: &mut HashMap<String, FuncTableVal>, all_vars: Vec<LocalVar>, globals: Vec<GlobalVar>, stack_args: Vec<LocalVar>, statements: Vec<Statement>, val: FuncTableVal, num_reg_args: usize, stack_added: usize) -> bool {
     let mut has_early_ret = false;
@@ -403,6 +414,7 @@ fn compile_scope(out: &mut CompiledAsm, functab: &mut HashMap<String, FuncTableV
             Statement::FuncCall(v) => { compile_func_call(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone()) },
             Statement::Return(v) => { compile_return(out, &functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()); has_early_ret = true; break },
             Statement::If(v) => { compile_if_statement(out, functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()) },
+            Statement::While(v) => { compile_while_statement(out, functab, v, all_vars.clone(), globals.clone(), stack_args.clone(), val.clone(), num_reg_args.clone(), stack_added.clone()) },
             Statement::Extern(v) => {
                 out.externs.push(v.identifier.clone()); functab.insert(v.identifier, v.val);
             },
@@ -423,6 +435,9 @@ fn get_local_vars(statements: &Vec<Statement>) -> Vec<LocalVar> {
                 });
             },
             Statement::If(s) => {
+                all_vars.append(&mut get_local_vars(&s.body));
+            },
+            Statement::While(s) => {
                 all_vars.append(&mut get_local_vars(&s.body));
             },
             _ => {},

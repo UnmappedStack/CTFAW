@@ -58,9 +58,9 @@ You can also use the following options:
 - [ ] Arrays
 - [ ] Logical blocks
     - [X] If
+    - [X] While
     - [ ] Else
     - [ ] Elseif
-    - [ ] While
     - [ ] For
 - [ ] Floats (maybe? seems kinda hard)
 - [ ] More to come...

@@ -1,16 +1,16 @@
 extern printf(txt: char*, ...);
-extern exit(code: i32); 
 const MAX_LEVEL: u64 = 10;
-
-fn fib_level(depth: u64, current_val: u64, prev_val: u64) {
-    if (depth == MAX_LEVEL) {
-        return 0;
-    }
-    printf("Current val: %d, depth: %d\n", current_val, depth);
-    fib_level(depth + 1, current_val + prev_val, current_val);
-}
 
 fn main() {
     printf("Fibonacci in CTFAW...\n");
-    fib_level(1, 1, 1);
+    let depth: u64 = 1;
+    let current_val: u64 = 1;
+    let prev_val: u64 = 1;
+    while (depth < MAX_LEVEL) {
+        printf("Current val: %d, depth: %d\n", current_val, depth);
+        let temp: u64 = current_val;
+        current_val = current_val + prev_val;
+        prev_val = temp;
+        depth = depth + 1;
+    }
 }
